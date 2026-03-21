@@ -33,6 +33,13 @@ session_start();
             <polyline points="17 11 12 6 7 11" />
             <polyline points="17 18 12 13 7 18" />
         </symbol>
+        <symbol id="icon-crystal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </symbol>
+        <symbol id="icon-vehicle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 22h20L12 2z" />
+            <path d="M12 18l-3-3m6 0l-3 3" />
+        </symbol>
     </svg>
 
     <main>
@@ -97,6 +104,14 @@ session_start();
                         <span class="prod">+<span id="energy-prod">0</span>/s</span>
                     </div>
                 </div>
+
+                <div class="res-card crystal">
+                    <div class="res-icon" style="color: #bc4aff;"><svg width="24" height="24"><use href="#icon-crystal"/></svg></div>
+                    <div class="res-data">
+                        <span class="label">Krystaly</span>
+                        <span class="value" id="display-crystal">0</span>
+                    </div>
+                </div>
             </section>
 
             <!-- Building Section -->
@@ -129,6 +144,51 @@ session_start();
                     <button onclick="game.upgrade('warehouse')" id="upgrade-warehouse">
                         Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="warehouse-cost"></span>
                     </button>
+                </div>
+            </section>
+
+            <!-- Expedition Section -->
+            <section class="expedition card" style="margin-bottom: 30px;">
+                <h3>🛰️ Hangar a Expedice</h3>
+                <div id="no-vehicle-view" class="hidden">
+                    <p>Nemáš žádné průzkumné vozidlo.</p>
+                    <button onclick="game.buyVehicle()" style="background: #bc4aff;">Koupit vozidlo (500 Fe)</button>
+                </div>
+                
+                <div id="vehicle-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
+                    <div style="flex: 1; text-align: center;">
+                        <svg width="60" height="60" style="color: #bc4aff;"><use href="#icon-vehicle"/></svg>
+                        <p><strong>Úroveň pancíře: <span id="vehicle-lvl">1</span></strong></p>
+                        <p style="font-size: 0.8rem; color: #888;">Ochrana: <span id="vehicle-reduction">0</span>%</p>
+                    </div>
+                    
+                    <div style="flex: 2;">
+                        <div id="vehicle-idle" class="hidden">
+                            <p>Vozidlo je připraveno v hangáru.</p>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="game.startExpedition()" style="background: #28a745;">Vyslat na expedici</button>
+                                <button onclick="game.upgradeVehicle()" id="upgrade-vehicle-btn">Vylepšit pancíř (<span id="vehicle-upgrade-cost"></span> Fe)</button>
+                            </div>
+                        </div>
+                        
+                        <div id="vehicle-active" class="hidden">
+                            <p id="vehicle-status-text">Probíhá průzkum...</p>
+                            <div class="progress-bg" style="height: 10px; margin-bottom: 10px;">
+                                <div id="vehicle-hp-bar" class="progress-bar" style="background: #28a745; width: 100%;"></div>
+                            </div>
+                            <p style="font-size: 0.9rem; margin-bottom: 5px;">
+                                ⏱️ Čas: <span id="vehicle-timer">0:00</span> | 
+                                Stav pancíře: <span id="vehicle-hp-val">100</span>%
+                            </p>
+                            <p style="font-size: 0.9rem; margin-bottom: 10px;">Nalezeno krystalů: <span id="vehicle-crystals">0</span></p>
+                            <button id="recall-btn" onclick="game.recallVehicle()" style="background: #ffc107; color: black;">Odvolat vozidlo</button>
+                        </div>
+
+                        <div id="vehicle-destroyed" class="hidden">
+                            <p style="color: #ff4a4a;"><strong>⚠️ Vozidlo bylo při průzkumu zničeno!</strong></p>
+                            <button onclick="game.buyVehicle()" style="background: #bc4aff;">Postavit nové vozidlo (500 Fe)</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 

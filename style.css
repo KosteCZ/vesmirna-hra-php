@@ -58,6 +58,7 @@ main { max-width: 900px; margin: 0 auto; padding: 20px; }
 .res-data .prod { font-size: 0.8rem; color: #28a745; position: absolute; top: 10px; right: 10px; }
 
 .energy .res-icon { color: #ffcc00; }
+.crystal .res-icon { color: #bc4aff; }
 
 .progress-bg { background: #0b0e14; height: 4px; border-radius: 2px; margin-top: 5px; }
 .progress-bar { background: #4af2ff; height: 100%; border-radius: 2px; transition: width 0.1s; }
