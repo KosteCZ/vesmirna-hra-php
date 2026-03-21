@@ -1,0 +1,152 @@
+<?php
+session_start();
+?>
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Vesmírná Kolonie (PHP)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- SVG Icons Definition -->
+    <svg style="display: none;">
+        <symbol id="icon-iron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 10h16M4 14h16M4 18h16M4 6h16M21 6V18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z" />
+        </symbol>
+        <symbol id="icon-energy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </symbol>
+        <symbol id="icon-mine" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v10M18 9l-6 3-6-3M6 15l6 3 6-3" />
+        </symbol>
+        <symbol id="icon-solar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+        </symbol>
+        <symbol id="icon-warehouse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+        </symbol>
+        <symbol id="icon-upgrade" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="17 11 12 6 7 11" />
+            <polyline points="17 18 12 13 7 18" />
+        </symbol>
+    </svg>
+
+    <main>
+        <header class="top-bar">
+            <div class="logo">🚀 Vesmírná Kolonie</div>
+            <div id="user-info" class="user-pill hidden">
+                <span id="player-name"></span>
+                <button class="logout-btn" onclick="auth.logout()">✕</button>
+            </div>
+        </header>
+
+        <!-- Auth Section -->
+        <section id="auth-section" class="auth-container card hidden">
+            <h2 id="auth-title">Přihlášení na Palubu</h2>
+            <form id="auth-form">
+                <div class="input-group">
+                    <label for="email">E-mail</label>
+                    <input id="email" type="email" required placeholder="velitel@vesmir.cz">
+                </div>
+                <div class="input-group">
+                    <label for="password">Heslo</label>
+                    <input id="password" type="password" required placeholder="********">
+                </div>
+                <div id="playerName-group" class="input-group hidden">
+                    <label for="playerName">Jméno velitele</label>
+                    <input id="playerName" type="text" placeholder="Např. Captain Solo">
+                </div>
+                <button type="submit" id="auth-submit">Vstoupit do hry</button>
+            </form>
+            <p>
+                <span id="auth-switch-text">Ještě nemáš kolonii?</span>
+                <button class="link-btn" onclick="auth.toggleMode()" id="auth-switch-btn">Zaregistrovat se</button>
+            </p>
+        </section>
+
+        <!-- Loading Section -->
+        <div id="loading-section" class="loader-container">
+            <div class="loader">Skenuji orbitu...</div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="dashboard hidden">
+            <!-- Resource Section -->
+            <section class="resources">
+                <div class="res-card iron">
+                    <div class="res-icon"><svg width="24" height="24"><use href="#icon-iron"/></svg></div>
+                    <div class="res-data">
+                        <span class="label">Železo</span>
+                        <span class="value"><span id="display-iron">0</span> <small>/ <span id="display-limit">0</span></small></span>
+                        <div class="progress-bg">
+                            <div id="iron-progress" class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="prod">+<span id="iron-prod">0</span>/s</span>
+                    </div>
+                </div>
+
+                <div class="res-card energy">
+                    <div class="res-icon"><svg width="24" height="24"><use href="#icon-energy"/></svg></div>
+                    <div class="res-data">
+                        <span class="label">Energie</span>
+                        <span class="value" id="display-energy">0</span>
+                        <span class="prod">+<span id="energy-prod">0</span>/s</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Building Section -->
+            <section class="buildings">
+                <div class="building-card">
+                    <svg width="40" height="40"><use href="#icon-mine"/></svg>
+                    <h3>Důl na železo</h3>
+                    <p class="lvl">Úroveň <span id="mine-lvl">0</span></p>
+                    <p class="desc">Produkuje železo (stojí energii).</p>
+                    <button onclick="game.upgrade('mine')" id="upgrade-mine">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="mine-cost"></span>
+                    </button>
+                </div>
+
+                <div class="building-card">
+                    <svg width="40" height="40"><use href="#icon-solar"/></svg>
+                    <h3>Solární elektrárna</h3>
+                    <p class="lvl">Úroveň <span id="solar-lvl">0</span></p>
+                    <p class="desc">Vyrábí energii pro provoz budov.</p>
+                    <button onclick="game.upgrade('solar')" id="upgrade-solar">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="solar-cost"></span>
+                    </button>
+                </div>
+
+                <div class="building-card">
+                    <svg width="40" height="40"><use href="#icon-warehouse"/></svg>
+                    <h3>Sklad surovin</h3>
+                    <p class="lvl">Úroveň <span id="warehouse-lvl">0</span></p>
+                    <p class="desc">Zvyšuje maximální kapacitu železa.</p>
+                    <button onclick="game.upgrade('warehouse')" id="upgrade-warehouse">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="warehouse-cost"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Leaderboard Section -->
+            <section class="leaderboard card">
+                <h3>🏆 Top Průzkumníci</h3>
+                <table>
+                    <thead>
+                        <tr><th>Pozice</th><th>Velitel</th><th>Důl</th><th>Sklad Fe</th></tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
