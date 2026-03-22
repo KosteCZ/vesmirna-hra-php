@@ -97,7 +97,55 @@ button span { font-size: 0.8rem; opacity: 0.8; }
 
 /* Leaderboard */
 .card { background: #1a1f29; padding: 25px; border-radius: 15px; border: 1px solid #30363d; }
-.leaderboard table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+/* Alien Resources & Buildings */
+.resources.alien-res {
+    margin-top: 10px;
+}
+
+.buildings.alien-bld {
+    margin-top: 10px;
+}
+
+.res-card.yellow { border-left-color: #ffeb3b; }
+.res-card.red { border-left-color: #f44336; }
+.res-card.blue { border-left-color: #2196f3; }
+.res-card.green { border-left-color: #4caf50; }
+.res-card.orange { border-left-color: #ff9800; }
+.res-card.purple { border-left-color: #9c27b0; }
+
+.research-btn {
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s, transform 0.1s;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.research-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.research-btn:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+    opacity: 0.5;
+}
+
+.color-yellow { background: #ffeb3b; color: #000 !important; }
+.color-red { background: #f44336; }
+.color-blue { background: #2196f3; }
+.color-green { background: #4caf50; }
+.color-orange { background: #ff9800; }
+.color-purple { background: #9c27b0; }
+
+/* Existing ... */
+.leaderboard table {
+ width: 100%; border-collapse: collapse; margin-top: 20px; }
 .leaderboard th { text-align: left; padding: 12px; color: #888; font-size: 0.8rem; border-bottom: 1px solid #30363d; }
 .leaderboard td { padding: 12px; border-bottom: 1px solid #242c38; }
 .highlight { background: #4af2ff1a; color: #4af2ff; font-weight: bold; }

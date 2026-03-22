@@ -40,6 +40,14 @@ session_start();
             <path d="M12 2L2 22h20L12 2z" />
             <path d="M12 18l-3-3m6 0l-3 3" />
         </symbol>
+        <symbol id="icon-alien-res" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="5" width="14" height="14" rx="2" />
+        </symbol>
+        <symbol id="icon-drone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M2 12h20" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M18 6l-4 4M6 18l4-4M6 6l4 4M18 18l-4-4" />
+        </symbol>
     </svg>
 
     <main>
@@ -114,6 +122,11 @@ session_start();
                 </div>
             </section>
 
+            <!-- Alien Resource Section (Dynamic) -->
+            <section id="alien-resources" class="resources alien-res hidden">
+                <!-- Filled by JS -->
+            </section>
+
             <!-- Building Section -->
             <section class="buildings">
                 <div class="building-card">
@@ -145,6 +158,11 @@ session_start();
                         Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="warehouse-cost"></span>
                     </button>
                 </div>
+            </section>
+
+            <!-- Alien Buildings Section (Dynamic) -->
+            <section id="alien-buildings" class="buildings alien-bld hidden">
+                <!-- Filled by JS -->
             </section>
 
             <!-- Expedition Section -->
@@ -190,6 +208,47 @@ session_start();
                         </div>
                     </div>
                 </div>
+
+                <!-- Drone Sub-section -->
+                <div id="drone-section" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #30363d;">
+                    <div id="no-drone-view" class="hidden" style="display: flex; align-items: center; gap: 15px;">
+                        <div style="background: #333; padding: 10px; border-radius: 50%; opacity: 0.5;">
+                            <svg width="24" height="24"><use href="#icon-drone"/></svg>
+                        </div>
+                        <div style="flex-grow: 1;">
+                            <p style="margin: 0;"><strong>Těžební dron</strong></p>
+                            <p style="margin: 0; font-size: 0.8rem; color: #888;">Automaticky těží 1 krystal každých 5 minut.</p>
+                        </div>
+                        <button onclick="game.buyDrone()" style="width: auto; background: #bc4aff; padding: 5px 15px;">Koupit drona (250 Kryst.)</button>
+                    </div>
+
+                    <div id="drone-view" class="hidden" style="display: flex; align-items: center; gap: 15px;">
+                        <div style="background: #bc4aff1a; padding: 10px; border-radius: 50%; color: #bc4aff;">
+                            <svg width="24" height="24"><use href="#icon-drone"/></svg>
+                        </div>
+                        <div style="flex-grow: 1;">
+                            <p style="margin: 0;"><strong>Těžební dron (Aktivní)</strong></p>
+                            <p style="margin: 0; font-size: 0.85rem;">
+                                Zásoba: <span id="drone-storage-val">0</span> / 100 💎
+                            </p>
+                            <div class="progress-bg" style="height: 6px; width: 150px; margin-top: 5px;">
+                                <div id="drone-progress-bar" class="progress-bar" style="background: #bc4aff; width: 0%;"></div>
+                            </div>
+                        </div>
+                        <button onclick="game.collectDrone()" id="collect-drone-btn" style="width: auto; background: #28a745; padding: 5px 15px;">Vybrat krystaly</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Research Lab -->
+            <section id="research-lab" class="card" style="margin-bottom: 30px;">
+                <h3>🔬 Vědecká laboratoř</h3>
+                <div id="research-info">
+                    <!-- Research status message -->
+                </div>
+                <div id="color-options" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 15px;">
+                    <!-- Research buttons -->
+                </div>
             </section>
 
             <!-- Leaderboard Section -->
@@ -197,7 +256,7 @@ session_start();
                 <h3>🏆 Top Průzkumníci</h3>
                 <table>
                     <thead>
-                        <tr><th>Pozice</th><th>Velitel</th><th>Důl</th><th>Sklad Fe</th></tr>
+                        <tr><th>Pozice</th><th>Velitel</th><th>Důl na železo</th><th>Sklad Fe</th></tr>
                     </thead>
                     <tbody id="leaderboard-body">
                         <!-- Filled by JS -->

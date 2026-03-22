@@ -60,8 +60,67 @@ if ($action === 'upgrade') {
     }
 }
 
+if ($action === 'research_color') {
+    $color = $_POST['color'] ?? '';
+    $planet = getPlanetData($userId, $db);
+    $researched = $planet['researched_colors'] ?? [];
+    
+    if (count($researched) >= 2) {
+        echo json_encode(['error' => 'Již máš vyzkoumány 2 barvy!']);
+        exit;
+    }
+    
+    if (in_array($color, $researched)) {
+        echo json_encode(['error' => 'Tato barva je již vyzkoumána!']);
+        exit;
+    }
+    
+    $cost = (count($researched) === 0) ? 100 : 2000;
+    
+    if ($planet['crystal_amount'] >= $cost) {
+        $researched[] = $color;
+        $newList = implode(',', $researched);
+        
+        $stmt = $db->prepare("UPDATE planets SET crystal_amount = crystal_amount - ?, researched_colors = ?, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([$cost, $newList, date('Y-m-d H:i:s'), $userId]);
+        
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Nedostatek krystalů!']);
+    }
+}
+
+if ($action === 'upgrade_alien_mine') {
+    $color = $_POST['color'] ?? '';
+    $planet = getPlanetData($userId, $db);
+    $researched = $planet['researched_colors'] ?? [];
+    
+    if (!in_array($color, $researched)) {
+        echo json_encode(['error' => 'Tato barva není vyzkoumána!']);
+        exit;
+    }
+    
+    $currentLevel = $planet['alien_resources'][$color]['lvl'];
+    $ironCost = ($currentLevel + 1) * 500;
+    $crystalCost = ($currentLevel + 1) * 50;
+    
+    if ($planet['iron_amount'] >= $ironCost && $planet['crystal_amount'] >= $crystalCost) {
+        $newIron = $planet['iron_amount'] - $ironCost;
+        $newCrystals = $planet['crystal_amount'] - $crystalCost;
+        $newLevel = $currentLevel + 1;
+        
+        $sql = "UPDATE planets SET iron_amount = ?, crystal_amount = ?, mine_{$color}_lvl = ?, last_updated = ? WHERE user_id = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$newIron, $newCrystals, $newLevel, date('Y-m-d H:i:s'), $userId]);
+        
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Nedostatek surovin (Fe nebo krystaly)!']);
+    }
+}
+
 if ($action === 'leaderboard') {
-    $stmt = $db->query("SELECT p.mine_level, p.iron_amount, u.player_name FROM planets p JOIN users u ON p.user_id = u.id ORDER BY p.mine_level DESC LIMIT 10");
+    $stmt = $db->query("SELECT p.mine_level, p.iron_amount, p.researched_colors, u.player_name FROM planets p JOIN users u ON p.user_id = u.id ORDER BY p.mine_level DESC LIMIT 10");
     $leaderboard = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode($leaderboard);
 }
@@ -127,4 +186,33 @@ if ($action === 'upgrade_vehicle') {
     } else {
         echo json_encode(['error' => 'Nedostatek železa!']);
     }
+}
+
+if ($action === 'buy_drone') {
+    $planet = getPlanetData($userId, $db);
+    if ($planet['has_drone']) {
+        echo json_encode(['error' => 'Drona již máš!']);
+        exit;
+    }
+    
+    if ($planet['crystal_amount'] >= 250) {
+        $stmt = $db->prepare("UPDATE planets SET crystal_amount = crystal_amount - 250, has_drone = 1, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Nedostatek krystalů (250)!']);
+    }
+}
+
+if ($action === 'collect_drone') {
+    $planet = getPlanetData($userId, $db);
+    if (!$planet['has_drone']) {
+        echo json_encode(['error' => 'Nemáš drona!']);
+        exit;
+    }
+    
+    $amount = $planet['drone_storage'];
+    $stmt = $db->prepare("UPDATE planets SET crystal_amount = crystal_amount + ?, drone_storage = 0, last_updated = ? WHERE user_id = ?");
+    $stmt->execute([$amount, date('Y-m-d H:i:s'), $userId]);
+    echo json_encode(['success' => true]);
 }

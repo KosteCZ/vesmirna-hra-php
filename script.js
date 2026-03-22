@@ -38,6 +38,8 @@ const game = {
     displayIron: 0,
     displayEnergy: 0,
     displayCrystal: 0,
+    displayAlien: {}, // Tracks alien resource amounts locally
+    displayDrone: 0, // Tracks drone storage locally
     vehicleHP: 100,
     vehicleCrystals: 0,
     interval: null,
@@ -58,8 +60,18 @@ const game = {
             this.displayIron = this.planet.iron_amount;
             this.displayEnergy = this.planet.energy_amount;
             this.displayCrystal = this.planet.crystal_amount;
+            this.displayDrone = this.planet.drone_storage || 0;
+            
+            // Sync alien resources
+            this.displayAlien = {};
+            for (const color in this.planet.alien_resources) {
+                this.displayAlien[color] = this.planet.alien_resources[color].amount;
+            }
+            
             this.startLoop();
             this.updateUI();
+            this.updateResearchUI();
+            this.updateAlienUI();
         }
     },
 
@@ -71,9 +83,18 @@ const game = {
         data.forEach((p, i) => {
             const tr = document.createElement('tr');
             if (p.player_name === document.getElementById('player-name').innerText) tr.className = 'highlight';
+            
+            // Parse researched colors for the leaderboard
+            const researched = p.researched_colors ? p.researched_colors.split(',') : [];
+            let iconsHtml = '';
+            researched.forEach(color => {
+                const colorCode = this.getColorCode(color);
+                iconsHtml += `<svg width="16" height="16" style="color: ${colorCode}; margin-left: 5px; vertical-align: middle;"><use href="#icon-alien-res"/></svg>`;
+            });
+
             tr.innerHTML = `
                 <td>${i + 1}.</td>
-                <td>${p.player_name}</td>
+                <td>${p.player_name}${iconsHtml}</td>
                 <td>Lvl ${p.mine_level}</td>
                 <td>${Math.floor(p.iron_amount)}</td>
             `;
@@ -89,18 +110,38 @@ const game = {
             const energyProd = this.planet.energy_production;
             const ironLimit = this.planet.iron_storage_limit;
 
+            // Calculate total energy needed (Sync with db.php logic)
+            let extraEnergyNeeded = 0;
+            for (const color in this.planet.alien_resources) {
+                extraEnergyNeeded += (this.planet.alien_resources[color].lvl * 0.3);
+            }
+            const totalEnergyNeeded = (ironProd * 0.5) + extraEnergyNeeded;
+
             // Resource Production
-            this.displayEnergy += (energyProd / 10);
-            const ironTick = (ironProd / 10);
-            const energyNeeded = ironTick * 0.5;
+            const energyTick = (energyProd / 10);
+            const energyNeededTick = (totalEnergyNeeded / 10);
+            
+            let prodFactor = 1.0;
+            if (this.displayEnergy < energyNeededTick) {
+                prodFactor = 0.1; // 90% drop without energy
+            }
+
+            this.displayEnergy += (energyTick - energyNeededTick);
+            this.displayEnergy = Math.max(0, this.displayEnergy);
 
             if (this.displayIron < ironLimit) {
-                if (this.displayEnergy >= energyNeeded) {
-                    this.displayIron += ironTick;
-                    this.displayEnergy -= energyNeeded;
-                } else {
-                    this.displayIron += (ironTick * 0.1);
-                }
+                this.displayIron += (ironProd / 10) * prodFactor;
+            }
+
+            // Alien Production
+            for (const color in this.planet.alien_resources) {
+                const prod = this.planet.alien_resources[color].prod;
+                this.displayAlien[color] += (prod / 10) * prodFactor;
+            }
+
+            // Drone Production (1 crystal / 5 min = 1/300 per sec)
+            if (this.planet.has_drone) {
+                this.displayDrone = Math.min(100, this.displayDrone + (1 / 3000)); // 1/300 per sec, but loop is 0.1s
             }
 
             // Vehicle Expedition Logic
@@ -157,8 +198,8 @@ const game = {
         document.getElementById('display-energy').innerText = Math.floor(this.displayEnergy);
         document.getElementById('display-crystal').innerText = Math.floor(this.displayCrystal);
         
-        document.getElementById('iron-prod').innerText = this.planet.iron_production.toFixed(1);
-        document.getElementById('energy-prod').innerText = this.planet.energy_production.toFixed(1);
+        document.getElementById('iron-prod').innerText = this.planet.iron_production.toFixed(2);
+        document.getElementById('energy-prod').innerText = this.planet.energy_production.toFixed(2);
         
         const progress = (this.displayIron / ironLimit) * 100;
         document.getElementById('iron-progress').style.width = `${Math.min(100, progress)}%`;
@@ -178,6 +219,20 @@ const game = {
         document.getElementById('upgrade-mine').disabled = this.displayIron < mineCost;
         document.getElementById('upgrade-solar').disabled = this.displayIron < solarCost;
         document.getElementById('upgrade-warehouse').disabled = this.displayIron < warehouseCost;
+
+        // Update Alien Resource Values in UI
+        for (const color in this.displayAlien) {
+            const el = document.getElementById(`display-res-${color}`);
+            if (el) el.innerText = Math.floor(this.displayAlien[color]);
+            
+            const btn = document.getElementById(`upgrade-alien-mine-${color}`);
+            if (btn) {
+                const lvl = this.planet.alien_resources[color].lvl;
+                const ironCost = (lvl + 1) * 500;
+                const crystalCost = (lvl + 1) * 50;
+                btn.disabled = this.displayIron < ironCost || this.displayCrystal < crystalCost;
+            }
+        }
 
         // Vehicle UI
         if (this.planet.vehicle_level === 0 && this.planet.vehicle_status !== 'destroyed') {
@@ -207,6 +262,18 @@ const game = {
                 document.getElementById('vehicle-hp-bar').style.background = this.vehicleHP < 30 ? '#ff4a4a' : '#28a745';
                 document.getElementById('recall-btn').classList.toggle('hidden', this.planet.vehicle_status === 'returning');
             }
+        }
+
+        // Drone UI
+        if (this.planet.has_drone) {
+            document.getElementById('no-drone-view').classList.add('hidden');
+            document.getElementById('drone-view').classList.remove('hidden');
+            document.getElementById('drone-storage-val').innerText = Math.floor(this.displayDrone);
+            document.getElementById('drone-progress-bar').style.width = `${this.displayDrone}%`;
+            document.getElementById('collect-drone-btn').disabled = this.displayDrone < 1;
+        } else {
+            document.getElementById('no-drone-view').classList.remove('hidden');
+            document.getElementById('drone-view').classList.add('hidden');
         }
     },
 
@@ -269,6 +336,137 @@ const game = {
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);
+    },
+
+    async buyDrone() {
+        if (this.displayCrystal < 250) return alert("Nedostatek krystalů!");
+        const res = await fetch('api.php?action=buy_drone', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async collectDrone() {
+        const res = await fetch('api.php?action=collect_drone', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    // --- Alien Content Methods ---
+    colorNames: {
+        yellow: 'Žlutý', red: 'Červený', blue: 'Modrý',
+        green: 'Zelený', orange: 'Oranžový', purple: 'Fialový'
+    },
+
+    updateResearchUI() {
+        const researched = this.planet.researched_colors || [];
+        const info = document.getElementById('research-info');
+        const options = document.getElementById('color-options');
+        
+        const count = researched.length;
+        if (count >= 2) {
+            info.innerHTML = `<p style="color: #28a745;"><strong>Všechny výzkumné sloty (2/2) jsou obsazeny.</strong></p>`;
+        } else {
+            const cost = count === 0 ? 100 : 2000;
+            info.innerHTML = `<p>K dispozici máš slot č. <strong>${count + 1}</strong> za <strong>${cost} krystalů</strong>.</p>`;
+        }
+
+        options.innerHTML = '';
+        for (const color in this.colorNames) {
+            const isResearched = researched.includes(color);
+            const btn = document.createElement('button');
+            btn.className = `research-btn color-${color}`;
+            btn.innerText = this.colorNames[color];
+            
+            if (isResearched) {
+                btn.disabled = true;
+                btn.innerText += ' (Vyzkoumáno)';
+            } else if (count >= 2) {
+                btn.disabled = true;
+            } else {
+                const cost = count === 0 ? 100 : 2000;
+                btn.onclick = () => this.researchColor(color);
+                if (this.displayCrystal < cost) btn.style.opacity = '0.5';
+            }
+            options.appendChild(btn);
+        }
+    },
+
+    async researchColor(color) {
+        const formData = new FormData();
+        formData.append('color', color);
+        const res = await fetch('api.php?action=research_color', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    updateAlienUI() {
+        const researched = this.planet.researched_colors || [];
+        const resContainer = document.getElementById('alien-resources');
+        const bldContainer = document.getElementById('alien-buildings');
+        
+        if (researched.length === 0) {
+            resContainer.classList.add('hidden');
+            bldContainer.classList.add('hidden');
+            return;
+        }
+
+        resContainer.classList.remove('hidden');
+        bldContainer.classList.remove('hidden');
+        
+        resContainer.innerHTML = '';
+        bldContainer.innerHTML = '';
+
+        researched.forEach(color => {
+            const data = this.planet.alien_resources[color];
+            const colorCode = this.getColorCode(color);
+            
+            // Add resource card
+            const resCard = document.createElement('div');
+            resCard.className = `res-card ${color}`;
+            resCard.innerHTML = `
+                <div class="res-icon" style="color: ${colorCode}"><svg width="24" height="24"><use href="#icon-alien-res"/></svg></div>
+                <div class="res-data">
+                    <span class="label">${this.colorNames[color]} materiál</span>
+                    <span class="value" id="display-res-${color}">${Math.floor(this.displayAlien[color])}</span>
+                    <span class="prod">+${(data.prod).toFixed(2)}/s</span>
+                </div>
+            `;
+            resContainer.appendChild(resCard);
+
+            // Add building card
+            const bldCard = document.createElement('div');
+            bldCard.className = 'building-card';
+            const ironCost = (data.lvl + 1) * 500;
+            const crystalCost = (data.lvl + 1) * 50;
+            
+            bldCard.innerHTML = `
+                <div style="color: ${colorCode}"><svg width="40" height="40"><use href="#icon-alien-res"/></svg></div>
+                <h3>${this.colorNames[color]} důl</h3>
+                <p class="lvl">Úroveň ${data.lvl}</p>
+                <p class="desc">Produkuje vzácný ${this.colorNames[color].toLowerCase()} materiál.</p>
+                <button onclick="game.upgradeAlienMine('${color}')" id="upgrade-alien-mine-${color}">
+                    Vylepšit <span>(${ironCost} Fe, ${crystalCost} Kryst.)</span>
+                </button>
+            `;
+            bldContainer.appendChild(bldCard);
+        });
+    },
+
+    async upgradeAlienMine(color) {
+        const formData = new FormData();
+        formData.append('color', color);
+        const res = await fetch('api.php?action=upgrade_alien_mine', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    getColorCode(color) {
+        const codes = { yellow: '#ffeb3b', red: '#f44336', blue: '#2196f3', green: '#4caf50', orange: '#ff9800', purple: '#9c27b0' };
+        return codes[color] || '#fff';
     }
 };
 
