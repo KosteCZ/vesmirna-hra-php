@@ -153,14 +153,17 @@ const game = {
                 // Damage calculation (balanced for ~120s survival at lvl 1)
                 const baseDamageRate = 0.1; 
                 const acceleration = 0.006;
-                const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / (this.planet.vehicle_level || 1);
+                const armorFactor = Math.pow(this.planet.vehicle_level || 1, 1.2);
+                const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
                 
                 this.vehicleHP = Math.max(0, 100 - totalDamage);
                 
                 let displaySeconds = 0;
 
                 if (this.planet.vehicle_status === 'exploring') {
-                    this.vehicleCrystals = secondsOut * 0.1;
+                    const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
+                    const crystalRate = 0.1 * (1 + (sensorLvl - 1) * 0.05);
+                    this.vehicleCrystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
                 } else {
                     // Returning
@@ -243,12 +246,22 @@ const game = {
             document.getElementById('vehicle-view').classList.remove('hidden');
             document.getElementById('vehicle-lvl').innerText = this.planet.vehicle_level;
             
-            const reduction = Math.round((1 - (1 / this.planet.vehicle_level)) * 100);
+            const reduction = Math.round((1 - (1 / Math.pow(this.planet.vehicle_level || 1, 1.2))) * 100);
             document.getElementById('vehicle-reduction').innerText = reduction;
+
+            // Sensor UI
+            const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
+            document.getElementById('vehicle-sensor-lvl').innerText = sensorLvl;
+            document.getElementById('vehicle-sensor-bonus').innerText = (sensorLvl - 1) * 5;
             
             const upgradeCost = (this.planet.vehicle_level + 1) * 500;
+            const sensorCost = sensorLvl * 1000;
+
             document.getElementById('vehicle-upgrade-cost').innerText = upgradeCost;
+            document.getElementById('vehicle-sensor-cost').innerText = sensorCost;
+
             document.getElementById('upgrade-vehicle-btn').disabled = this.displayIron < upgradeCost;
+            document.getElementById('upgrade-sensors-btn').disabled = this.displayIron < sensorCost;
 
             document.getElementById('vehicle-idle').classList.toggle('hidden', this.planet.vehicle_status !== 'idle');
             document.getElementById('vehicle-active').classList.toggle('hidden', this.planet.vehicle_status !== 'exploring' && this.planet.vehicle_status !== 'returning');
@@ -333,6 +346,13 @@ const game = {
 
     async upgradeVehicle() {
         const res = await fetch('api.php?action=upgrade_vehicle', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeVehicleSensors() {
+        const res = await fetch('api.php?action=upgrade_vehicle_sensors', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);

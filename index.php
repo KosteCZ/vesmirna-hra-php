@@ -178,14 +178,20 @@ session_start();
                         <svg width="60" height="60" style="color: #bc4aff;"><use href="#icon-vehicle"/></svg>
                         <p><strong>Úroveň pancíře: <span id="vehicle-lvl">1</span></strong></p>
                         <p style="font-size: 0.8rem; color: #888;">Ochrana: <span id="vehicle-reduction">0</span>%</p>
+                        <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+                        <p><strong>Senzory: Lvl <span id="vehicle-sensor-lvl">1</span></strong></p>
+                        <p style="font-size: 0.8rem; color: #888;">Bonus: <span id="vehicle-sensor-bonus">0</span>%</p>
                     </div>
                     
                     <div style="flex: 2;">
                         <div id="vehicle-idle" class="hidden">
                             <p>Vozidlo je připraveno v hangáru.</p>
-                            <div style="display: flex; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
                                 <button onclick="game.startExpedition()" style="background: #28a745;">Vyslat na expedici</button>
-                                <button onclick="game.upgradeVehicle()" id="upgrade-vehicle-btn">Vylepšit pancíř (<span id="vehicle-upgrade-cost"></span> Fe)</button>
+                                <div style="display: flex; gap: 10px;">
+                                    <button onclick="game.upgradeVehicle()" id="upgrade-vehicle-btn" style="flex: 1;">Vylepšit pancíř (<span id="vehicle-upgrade-cost"></span> Fe)</button>
+                                    <button onclick="game.upgradeVehicleSensors()" id="upgrade-sensors-btn" style="flex: 1;">Vylepšit senzory (<span id="vehicle-sensor-cost"></span> Fe)</button>
+                                </div>
                             </div>
                         </div>
                         

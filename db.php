@@ -59,7 +59,8 @@ $columnsToAdd = [
     'mine_orange_lvl' => "INTEGER DEFAULT 0",
     'mine_purple_lvl' => "INTEGER DEFAULT 0",
     'has_drone' => "INTEGER DEFAULT 0",
-    'drone_storage' => "REAL DEFAULT 0"
+    'drone_storage' => "REAL DEFAULT 0",
+    'vehicle_sensor_lvl' => "INTEGER DEFAULT 1"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -172,7 +173,8 @@ function getPlanetData($userId, $db) {
             
             $baseDamageRate = 0.1; 
             $acceleration = 0.006;
-            $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $vehicleLevel;
+            $armorFactor = pow($vehicleLevel, 1.2);
+            $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $armorFactor;
 
             $currentHP = max(0, 100 - $totalDamage);
             
@@ -190,7 +192,9 @@ function getPlanetData($userId, $db) {
                     $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
                     
                     if ($secondsReturning >= $secondsToReturn) {
-                        $crystalsFound = floor($secondsToReturn * 0.1);
+                        $sensorLvl = $planet['vehicle_sensor_lvl'] ?? 1;
+                        $crystalRate = 0.1 * (1 + ($sensorLvl - 1) * 0.05);
+                        $crystalsFound = floor($secondsToReturn * $crystalRate);
                         $crystalAmount += $crystalsFound;
                         $vehicleStatus = 'idle';
                         $vehicleHP = 100;
@@ -237,6 +241,7 @@ function getPlanetData($userId, $db) {
             'solar_plant_level' => $planet['solar_plant_level'],
             'warehouse_level' => $planet['warehouse_level'],
             'vehicle_level' => $vehicleLevel,
+            'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
             'vehicle_hp' => $vehicleHP,
             'vehicle_status' => $vehicleStatus,
             'vehicle_start_time' => $planet['vehicle_start_time'] ?? null,

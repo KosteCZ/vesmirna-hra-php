@@ -197,6 +197,20 @@ if ($action === 'upgrade_vehicle') {
     }
 }
 
+if ($action === 'upgrade_vehicle_sensors') {
+    $planet = getPlanetData($userId, $db);
+    $cost = $planet['vehicle_sensor_lvl'] * 1000;
+    
+    if ($planet['iron_amount'] >= $cost) {
+        $newIron = $planet['iron_amount'] - $cost;
+        $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, vehicle_sensor_lvl = vehicle_sensor_lvl + 1, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([$newIron, $planet['energy_amount'], date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => "Nedostatek železa ({$cost})!"]);
+    }
+}
+
 if ($action === 'buy_drone') {
     $planet = getPlanetData($userId, $db);
     if ($planet['has_drone']) {
