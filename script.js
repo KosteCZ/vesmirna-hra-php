@@ -467,6 +467,34 @@ const game = {
     getColorCode(color) {
         const codes = { yellow: '#ffeb3b', red: '#f44336', blue: '#2196f3', green: '#4caf50', orange: '#ff9800', purple: '#9c27b0' };
         return codes[color] || '#fff';
+    },
+
+    async fetchGlobalStats() {
+        const res = await fetch('api.php?action=global_stats');
+        const data = await res.json();
+        const container = document.getElementById('global-progress-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+        const target = 10000000;
+        
+        for (const color in this.colorNames) {
+            const amount = parseFloat(data[color] || 0);
+            const percent = Math.min(100, (amount / target) * 100);
+            const colorCode = this.getColorCode(color);
+            
+            const item = document.createElement('div');
+            item.innerHTML = `
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
+                    <span><svg width="14" height="14" style="color: ${colorCode}; vertical-align: middle; margin-right: 5px;"><use href="#icon-alien-res"/></svg> <strong>${this.colorNames[color]} materiál</strong></span>
+                    <span>${Math.floor(amount).toLocaleString()} / ${target.toLocaleString()}</span>
+                </div>
+                <div class="progress-bg" style="height: 12px;">
+                    <div class="progress-bar" style="width: ${percent}%; background: ${colorCode}; box-shadow: 0 0 10px ${colorCode}66;"></div>
+                </div>
+            `;
+            container.appendChild(item);
+        }
     }
 };
 
@@ -498,4 +526,7 @@ document.getElementById('auth-form').addEventListener('submit', async (e) => {
 
 // Initialize
 auth.init();
-setInterval(() => game.fetchLeaderboard(), 5000); // Update leaderboard every 5s
+setInterval(() => {
+    game.fetchLeaderboard();
+    game.fetchGlobalStats();
+}, 5000); // Update every 5s

@@ -125,6 +125,15 @@ if ($action === 'leaderboard') {
     echo json_encode($leaderboard);
 }
 
+if ($action === 'global_stats') {
+    $sql = "SELECT 
+        SUM(res_yellow) as yellow, SUM(res_red) as red, SUM(res_blue) as blue, 
+        SUM(res_green) as green, SUM(res_orange) as orange, SUM(res_purple) as purple 
+        FROM planets";
+    $stmt = $db->query($sql);
+    echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+}
+
 if ($action === 'buy_vehicle') {
     $planet = getPlanetData($userId, $db);
     if ($planet['iron_amount'] >= 500) {

@@ -252,7 +252,7 @@ session_start();
             </section>
 
             <!-- Leaderboard Section -->
-            <section class="leaderboard card">
+            <section class="leaderboard card" style="margin-bottom: 30px;">
                 <h3>🏆 Top Průzkumníci</h3>
                 <table>
                     <thead>
@@ -262,6 +262,17 @@ session_start();
                         <!-- Filled by JS -->
                     </tbody>
                 </table>
+            </section>
+
+            <!-- Game Goal Section -->
+            <section id="game-goal" class="card">
+                <h3>🌌 Společný cíl: Megaprojekt "Nová naděje"</h3>
+                <p style="font-size: 0.9rem; color: #888; margin-bottom: 20px;">
+                    Spojte síly se všemi veliteli v galaxii a nashromážděte dostatek mimozemských materiálů pro stavbu intergalaktické brány.
+                </p>
+                <div id="global-progress-container" style="display: flex; flex-direction: column; gap: 15px;">
+                    <!-- Filled by JS -->
+                </div>
             </section>
         </div>
     </main>
