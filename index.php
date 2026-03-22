@@ -53,7 +53,7 @@ session_start();
 
         <!-- Auth Section -->
         <section id="auth-section" class="auth-container card hidden">
-            <h2 id="auth-title">Přihlášení na Palubu</h2>
+            <h2 id="auth-title">Přihlášení na palubu</h2>
             <form id="auth-form">
                 <div class="input-group">
                     <label for="email">E-mail</label>
@@ -149,7 +149,7 @@ session_start();
 
             <!-- Expedition Section -->
             <section class="expedition card" style="margin-bottom: 30px;">
-                <h3>🛰️ Hangar a Expedice</h3>
+                <h3>🛰️ Hangár a expedice</h3>
                 <div id="no-vehicle-view" class="hidden">
                     <p>Nemáš žádné průzkumné vozidlo.</p>
                     <button onclick="game.buyVehicle()" style="background: #bc4aff;">Koupit vozidlo (500 Fe)</button>
