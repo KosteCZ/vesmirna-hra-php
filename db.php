@@ -235,7 +235,9 @@ function getPlanetData($userId, $db) {
             
             $baseDamageRate = 0.1; 
             $acceleration = 0.006;
-            $armorFactor = pow($vehicle2Level, 1.2);
+            // Armor is 2x more effective (level counts double for the bonus)
+            $effectiveLevel = 1 + ($vehicle2Level - 1) * 2;
+            $armorFactor = pow($effectiveLevel, 1.2);
             $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $armorFactor;
 
             $currentHP = max(0, 100 - $totalDamage);
@@ -255,7 +257,8 @@ function getPlanetData($userId, $db) {
                     
                     if ($secondsReturning >= $secondsToReturn) {
                         $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
-                        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.05);
+                        // Sensors are 2x more effective (10% bonus instead of 5%)
+                        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10);
                         $crystalsFound = floor($secondsToReturn * $crystalRate);
                         $crystalAmount += $crystalsFound;
                         $vehicle2Status = 'idle';

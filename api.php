@@ -339,7 +339,8 @@ try {
         $recallTime = new DateTime($planet['vehicle2_recall_time']);
         $secondsOut = $recallTime->getTimestamp() - $startTime->getTimestamp();
         $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
-        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.05);
+        // Sensors are 2x more effective (10% bonus instead of 5%)
+        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10);
         $crystalsFound = floor($secondsOut * $crystalRate);
         $stmt = $db->prepare("UPDATE planets SET crystal_amount = crystal_amount + ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE user_id = ?");
         $stmt->execute([$crystalsFound, date('Y-m-d H:i:s'), $userId]);

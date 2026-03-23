@@ -202,7 +202,9 @@ const game = {
                 
                 const baseDamageRate = 0.1; 
                 const acceleration = 0.006;
-                const armorFactor = Math.pow(this.planet.vehicle2_level || 1, 1.2);
+                // Armor is 2x more effective (level counts double for the bonus)
+                const effectiveLevel = 1 + ((this.planet.vehicle2_level || 1) - 1) * 2;
+                const armorFactor = Math.pow(effectiveLevel, 1.2);
                 const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
                 
                 this.vehicle2HP = Math.max(0, 100 - totalDamage);
@@ -210,7 +212,8 @@ const game = {
 
                 if (this.planet.vehicle2_status === 'exploring') {
                     const sensorLvl = this.planet.vehicle2_sensor_lvl || 1;
-                    const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.05);
+                    // Sensors are 2x more effective (10% bonus instead of 5%)
+                    const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.10);
                     this.vehicle2Crystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
                 } else {
