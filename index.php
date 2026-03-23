@@ -207,50 +207,110 @@ session_start();
 
             <!-- Expedition Section -->
             <section class="expedition card" style="margin-bottom: 30px;">
-                <h3>🛰️ Hangár a expedice</h3>
-                <div id="no-vehicle-view" class="hidden">
-                    <p>Nemáš žádné průzkumné vozidlo.</p>
-                    <button onclick="game.buyVehicle()" style="background: #bc4aff;">Koupit vozidlo (500 Fe)</button>
-                </div>
+                <h3>🛰️ Hangáry a expedice</h3>
                 
-                <div id="vehicle-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
-                    <div style="flex: 1; text-align: center;">
-                        <svg width="60" height="60" style="color: #bc4aff;"><use href="#icon-vehicle"/></svg>
-                        <p><strong>Úroveň pancíře: <span id="vehicle-lvl">1</span></strong></p>
-                        <p style="font-size: 0.8rem; color: #888;">Ochrana: <span id="vehicle-reduction">0</span>%</p>
-                        <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-                        <p><strong>Senzory: Lvl <span id="vehicle-sensor-lvl">1</span></strong></p>
-                        <p style="font-size: 0.8rem; color: #888;">Bonus: <span id="vehicle-sensor-bonus">0</span>%</p>
+                <!-- Hangar 1: Iron Vehicle -->
+                <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #30363d;">
+                    <p style="margin-top: 0; color: #888; font-size: 0.85rem;">PRŮZKUMNÉ VOZIDLO I (Železo)</p>
+                    <div id="no-vehicle-view" class="hidden">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="background: #333; padding: 10px; border-radius: 50%; opacity: 0.5;">
+                                <svg width="30" height="30"><use href="#icon-vehicle"/></svg>
+                            </div>
+                            <div style="flex-grow: 1;">
+                                <p style="margin: 0;"><strong>Vozidlo I není postaveno</strong></p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #888;">Vyžaduje železo pro konstrukci.</p>
+                            </div>
+                            <button onclick="game.buyVehicle()" style="width: auto; background: #bc4aff; padding: 5px 15px;">Postavit (500 Fe)</button>
+                        </div>
                     </div>
                     
-                    <div style="flex: 2;">
-                        <div id="vehicle-idle" class="hidden">
-                            <p>Vozidlo je připraveno v hangáru.</p>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <button onclick="game.startExpedition()" style="background: #28a745;">Vyslat na expedici</button>
-                                <div style="display: flex; gap: 10px;">
-                                    <button onclick="game.upgradeVehicle()" id="upgrade-vehicle-btn" style="flex: 1;">Vylepšit pancíř (<span id="vehicle-upgrade-cost"></span> Fe)</button>
-                                    <button onclick="game.upgradeVehicleSensors()" id="upgrade-sensors-btn" style="flex: 1;">Vylepšit senzory (<span id="vehicle-sensor-cost"></span> Fe)</button>
-                                </div>
-                            </div>
+                    <div id="vehicle-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
+                        <div style="flex: 1; text-align: center;">
+                            <svg width="50" height="50" style="color: #bc4aff;"><use href="#icon-vehicle"/></svg>
+                            <p style="font-size: 0.85rem; margin: 5px 0;"><strong>Pancíř Lvl <span id="vehicle-lvl">1</span></strong></p>
+                            <p style="font-size: 0.75rem; color: #888; margin: 0;">Senzory Lvl <span id="vehicle-sensor-lvl">1</span></p>
                         </div>
                         
-                        <div id="vehicle-active" class="hidden">
-                            <p id="vehicle-status-text">Probíhá průzkum...</p>
-                            <div class="progress-bg" style="height: 10px; margin-bottom: 10px;">
-                                <div id="vehicle-hp-bar" class="progress-bar" style="background: #28a745; width: 100%;"></div>
+                        <div style="flex: 2;">
+                            <div id="vehicle-idle" class="hidden">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <button onclick="game.startExpedition()" style="background: #28a745; padding: 5px;">Vyslat na expedici</button>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <button onclick="game.upgradeVehicle()" id="upgrade-vehicle-btn" style="font-size: 0.8rem;">Pancíř (<span id="vehicle-upgrade-cost"></span> Fe)</button>
+                                        <button onclick="game.upgradeVehicleSensors()" id="upgrade-sensors-btn" style="font-size: 0.8rem;">Senzory (<span id="vehicle-sensor-cost"></span> Fe)</button>
+                                    </div>
+                                </div>
                             </div>
-                            <p style="font-size: 0.9rem; margin-bottom: 5px;">
-                                ⏱️ Čas: <span id="vehicle-timer">0:00</span> | 
-                                Stav pancíře: <span id="vehicle-hp-val">100</span>%
-                            </p>
-                            <p style="font-size: 0.9rem; margin-bottom: 10px;">Nalezeno krystalů: <span id="vehicle-crystals">0</span></p>
-                            <button id="recall-btn" onclick="game.recallVehicle()" style="background: #ffc107; color: black;">Odvolat vozidlo</button>
-                        </div>
+                            
+                            <div id="vehicle-active" class="hidden">
+                                <p id="vehicle-status-text" style="font-size: 0.85rem; margin-top: 0;">Probíhá průzkum...</p>
+                                <div class="progress-bg" style="height: 8px; margin-bottom: 5px;">
+                                    <div id="vehicle-hp-bar" class="progress-bar" style="background: #28a745; width: 100%;"></div>
+                                </div>
+                                <p style="font-size: 0.8rem; margin: 0;">
+                                    ⏱️ <span id="vehicle-timer">0:00</span> | ❤️ <span id="vehicle-hp-val">100</span>% | 💎 <span id="vehicle-crystals">0</span>
+                                </p>
+                                <button id="recall-btn" onclick="game.recallVehicle()" style="background: #ffc107; color: black; padding: 3px 10px; margin-top: 8px; font-size: 0.8rem;">Odvolat</button>
+                            </div>
 
-                        <div id="vehicle-destroyed" class="hidden">
-                            <p style="color: #ff4a4a;"><strong>⚠️ Vozidlo bylo při průzkumu zničeno!</strong></p>
-                            <button onclick="game.buyVehicle()" style="background: #bc4aff;">Postavit nové vozidlo (500 Fe)</button>
+                            <div id="vehicle-destroyed" class="hidden">
+                                <p style="color: #ff4a4a; margin: 0; font-size: 0.85rem;"><strong>⚠️ Vozidlo bylo zničeno!</strong></p>
+                                <button onclick="game.buyVehicle()" style="background: #bc4aff; margin-top: 5px; padding: 5px 10px; font-size: 0.85rem;">Postavit nové (500 Fe)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hangar 2: Copper Vehicle -->
+                <div id="hangar2-section" class="hidden" style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #30363d;">
+                    <p style="margin-top: 0; color: #b87333; font-size: 0.85rem;">PRŮZKUMNÉ VOZIDLO II (Měď)</p>
+                    <div id="no-vehicle2-view" class="hidden">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="background: #b8733333; padding: 10px; border-radius: 50%; opacity: 0.5; color: #b87333;">
+                                <svg width="30" height="30"><use href="#icon-vehicle"/></svg>
+                            </div>
+                            <div style="flex-grow: 1;">
+                                <p style="margin: 0;"><strong>Vozidlo II není postaveno</strong></p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #888;">Vyžaduje měď pro konstrukci.</p>
+                            </div>
+                            <button onclick="game.buyVehicle2()" style="width: auto; background: #b87333; padding: 5px 15px;">Postavit (500 Cu)</button>
+                        </div>
+                    </div>
+                    
+                    <div id="vehicle2-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
+                        <div style="flex: 1; text-align: center;">
+                            <svg width="50" height="50" style="color: #b87333;"><use href="#icon-vehicle"/></svg>
+                            <p style="font-size: 0.85rem; margin: 5px 0;"><strong>Pancíř Lvl <span id="vehicle2-lvl">1</span></strong></p>
+                            <p style="font-size: 0.75rem; color: #888; margin: 0;">Senzory Lvl <span id="vehicle2-sensor-lvl">1</span></p>
+                        </div>
+                        
+                        <div style="flex: 2;">
+                            <div id="vehicle2-idle" class="hidden">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <button onclick="game.startExpedition2()" style="background: #28a745; padding: 5px;">Vyslat na expedici</button>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <button onclick="game.upgradeVehicle2Armor()" id="upgrade-vehicle2-btn" style="font-size: 0.8rem;">Pancíř (<span id="vehicle2-upgrade-cost"></span> Cu)</button>
+                                        <button onclick="game.upgradeVehicle2Sensors()" id="upgrade-sensors2-btn" style="font-size: 0.8rem;">Senzory (<span id="vehicle2-sensor-cost"></span> Cu)</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="vehicle2-active" class="hidden">
+                                <p id="vehicle2-status-text" style="font-size: 0.85rem; margin-top: 0;">Probíhá průzkum...</p>
+                                <div class="progress-bg" style="height: 8px; margin-bottom: 5px;">
+                                    <div id="vehicle2-hp-bar" class="progress-bar" style="background: #28a745; width: 100%;"></div>
+                                </div>
+                                <p style="font-size: 0.8rem; margin: 0;">
+                                    ⏱️ <span id="vehicle2-timer">0:00</span> | ❤️ <span id="vehicle2-hp-val">100</span>% | 💎 <span id="vehicle2-crystals">0</span>
+                                </p>
+                                <button id="recall2-btn" onclick="game.recallVehicle2()" style="background: #ffc107; color: black; padding: 3px 10px; margin-top: 8px; font-size: 0.8rem;">Odvolat</button>
+                            </div>
+
+                            <div id="vehicle2-destroyed" class="hidden">
+                                <p style="color: #ff4a4a; margin: 0; font-size: 0.85rem;"><strong>⚠️ Vozidlo II bylo zničeno!</strong></p>
+                                <button onclick="game.buyVehicle2()" style="background: #b87333; margin-top: 5px; padding: 5px 10px; font-size: 0.85rem;">Postavit nové (500 Cu)</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -275,7 +335,7 @@ session_start();
                         <div style="flex-grow: 1;">
                             <p style="margin: 0;"><strong>Těžební dron (Aktivní)</strong></p>
                             <p style="margin: 0; font-size: 0.85rem;">
-                                Zásoba: <span id="drone-storage-val">0</span> / 100 💎
+                                Zásoba: <span id="drone-storage-val">0</span> / <span id="drone-storage-limit">100</span> 💎
                             </p>
                             <div class="progress-bg" style="height: 6px; width: 150px; margin-top: 5px;">
                                 <div id="drone-progress-bar" class="progress-bar" style="background: #bc4aff; width: 0%;"></div>

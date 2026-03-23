@@ -5,6 +5,8 @@ require_once 'db.php';
 
 header('Content-Type: application/json');
 
+const UPGRADE_COST_MULTIPLIER = 100;
+
 try {
     if (!isset($_SESSION['user_id'])) {
         echo json_encode(['error' => 'Nepřihlášen!']);
@@ -14,7 +16,7 @@ try {
     $userId = $_SESSION['user_id'];
     $action = $_GET['action'] ?? '';
 
-    const UPGRADE_COST_MULTIPLIER = 100;
+    // Action handlers...
 
     if ($action === 'get_planet') {
         $planet = getPlanetData($userId, $db);
@@ -299,17 +301,79 @@ try {
         }
     }
 
-    if ($action === 'upgrade_vehicle_sensors') {
+    if ($action === 'buy_vehicle2') {
         $planet = getPlanetData($userId, $db);
-        $cost = $planet['vehicle_sensor_lvl'] * 1000;
-        
-        if ($planet['iron_amount'] >= $cost) {
-            $newIron = $planet['iron_amount'] - $cost;
-            $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, vehicle_sensor_lvl = vehicle_sensor_lvl + 1, last_updated = ? WHERE user_id = ?");
-            $stmt->execute([$newIron, $planet['energy_amount'], date('Y-m-d H:i:s'), $userId]);
+        if (!$planet['research_copper']) {
+            echo json_encode(['error' => 'Měď není vyzkoumána!']);
+            exit;
+        }
+        if ($planet['res_copper'] >= 500) {
+            $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - 500, vehicle2_level = 1, vehicle2_hp = 100, vehicle2_status = 'idle', last_updated = ? WHERE user_id = ?");
+            $stmt->execute([date('Y-m-d H:i:s'), $userId]);
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => "Nedostatek železa ({$cost})!"]);
+            echo json_encode(['error' => 'Nedostatek mědi (500 Cu)!']);
+        }
+    }
+
+    if ($action === 'start_expedition2') {
+        $planet = getPlanetData($userId, $db);
+        $stmt = $db->prepare("UPDATE planets SET vehicle2_status = 'exploring', vehicle2_start_time = ?, last_updated = ? WHERE user_id = ?");
+        $now = date('Y-m-d H:i:s');
+        $stmt->execute([$now, $now, $userId]);
+        echo json_encode(['success' => true]);
+    }
+
+    if ($action === 'recall_vehicle2') {
+        $planet = getPlanetData($userId, $db);
+        $stmt = $db->prepare("UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE user_id = ?");
+        $now = date('Y-m-d H:i:s');
+        $stmt->execute([$now, $now, $userId]);
+        echo json_encode(['success' => true]);
+    }
+
+    if ($action === 'finish_expedition2') {
+        $planet = getPlanetData($userId, $db);
+        $now = new DateTime();
+        $startTime = new DateTime($planet['vehicle2_start_time']);
+        $recallTime = new DateTime($planet['vehicle2_recall_time']);
+        $secondsOut = $recallTime->getTimestamp() - $startTime->getTimestamp();
+        $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
+        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.05);
+        $crystalsFound = floor($secondsOut * $crystalRate);
+        $stmt = $db->prepare("UPDATE planets SET crystal_amount = crystal_amount + ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([$crystalsFound, date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    }
+
+    if ($action === 'destroy_vehicle2') {
+        $planet = getPlanetData($userId, $db);
+        $stmt = $db->prepare("UPDATE planets SET vehicle2_status = 'destroyed', vehicle2_level = 0, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    }
+
+    if ($action === 'upgrade_vehicle2_armor') {
+        $planet = getPlanetData($userId, $db);
+        $cost = ($planet['vehicle2_level'] + 1) * 100;
+        if ($planet['res_copper'] >= $cost) {
+            $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - ?, vehicle2_level = vehicle2_level + 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$cost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
+        }
+    }
+
+    if ($action === 'upgrade_vehicle2_sensors') {
+        $planet = getPlanetData($userId, $db);
+        $cost = $planet['vehicle2_sensor_lvl'] * 150;
+        if ($planet['res_copper'] >= $cost) {
+            $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - ?, vehicle2_sensor_lvl = vehicle2_sensor_lvl + 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$cost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
         }
     }
 

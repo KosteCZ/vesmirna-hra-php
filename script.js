@@ -43,6 +43,8 @@ const game = {
     displayDrone: 0, // Tracks drone storage locally
     vehicleHP: 100,
     vehicleCrystals: 0,
+    vehicle2HP: 100,
+    vehicle2Crystals: 0,
     interval: null,
 
     showDashboard(user) {
@@ -63,6 +65,8 @@ const game = {
             this.displayCrystal = this.planet.crystal_amount;
             this.displayCopper = this.planet.res_copper || 0;
             this.displayDrone = this.planet.drone_storage || 0;
+            this.vehicleHP = this.planet.vehicle_hp || 100;
+            this.vehicle2HP = this.planet.vehicle2_hp || 100;
             
             // Sync alien resources
             this.displayAlien = {};
@@ -155,20 +159,18 @@ const game = {
                 this.displayDrone = Math.min(limit, this.displayDrone + prod);
             }
 
-            // Vehicle Expedition Logic
+            // Vehicle 1 Expedition Logic
             if (this.planet.vehicle_status === 'exploring' || this.planet.vehicle_status === 'returning') {
                 const now = new Date();
                 const startTime = new Date(this.planet.vehicle_start_time + " UTC");
                 const secondsOut = (now - startTime) / 1000;
                 
-                // Damage calculation (balanced for ~120s survival at lvl 1)
                 const baseDamageRate = 0.1; 
                 const acceleration = 0.006;
                 const armorFactor = Math.pow(this.planet.vehicle_level || 1, 1.2);
                 const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
                 
                 this.vehicleHP = Math.max(0, 100 - totalDamage);
-                
                 let displaySeconds = 0;
 
                 if (this.planet.vehicle_status === 'exploring') {
@@ -177,26 +179,54 @@ const game = {
                     this.vehicleCrystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
                 } else {
-                    // Returning
                     const recallTime = new Date(this.planet.vehicle_recall_time + " UTC");
                     const secondsReturning = (now - recallTime) / 1000;
                     const secondsToReturn = (recallTime - startTime) / 1000;
-                    
                     displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
-
-                    if (secondsReturning >= secondsToReturn) {
-                        this.finishExpedition();
-                    }
+                    if (secondsReturning >= secondsToReturn) this.finishExpedition();
                 }
 
-                // Update Timer UI (M:SS)
                 const mins = Math.floor(displaySeconds / 60);
                 const secs = Math.floor(displaySeconds % 60);
-                document.getElementById('vehicle-timer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+                const timerEl = document.getElementById('vehicle-timer');
+                if (timerEl) timerEl.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
 
-                if (this.vehicleHP <= 0) {
-                    this.destroyVehicle();
+                if (this.vehicleHP <= 0) this.destroyVehicle();
+            }
+
+            // Vehicle 2 Expedition Logic
+            if (this.planet.vehicle2_status === 'exploring' || this.planet.vehicle2_status === 'returning') {
+                const now = new Date();
+                const startTime = new Date(this.planet.vehicle2_start_time + " UTC");
+                const secondsOut = (now - startTime) / 1000;
+                
+                const baseDamageRate = 0.1; 
+                const acceleration = 0.006;
+                const armorFactor = Math.pow(this.planet.vehicle2_level || 1, 1.2);
+                const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
+                
+                this.vehicle2HP = Math.max(0, 100 - totalDamage);
+                let displaySeconds = 0;
+
+                if (this.planet.vehicle2_status === 'exploring') {
+                    const sensorLvl = this.planet.vehicle2_sensor_lvl || 1;
+                    const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.05);
+                    this.vehicle2Crystals = secondsOut * crystalRate;
+                    displaySeconds = secondsOut;
+                } else {
+                    const recallTime = new Date(this.planet.vehicle2_recall_time + " UTC");
+                    const secondsReturning = (now - recallTime) / 1000;
+                    const secondsToReturn = (recallTime - startTime) / 1000;
+                    displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
+                    if (secondsReturning >= secondsToReturn) this.finishExpedition2();
                 }
+
+                const mins = Math.floor(displaySeconds / 60);
+                const secs = Math.floor(displaySeconds % 60);
+                const timerEl = document.getElementById('vehicle2-timer');
+                if (timerEl) timerEl.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+                if (this.vehicle2HP <= 0) this.destroyVehicle2();
             }
 
             this.updateUI();
@@ -314,7 +344,7 @@ const game = {
             }
         }
 
-        // Vehicle UI
+        // Vehicle I UI (Iron)
         if (this.planet.vehicle_level === 0 && this.planet.vehicle_status !== 'destroyed') {
             document.getElementById('no-vehicle-view').classList.remove('hidden');
             document.getElementById('vehicle-view').classList.add('hidden');
@@ -322,14 +352,9 @@ const game = {
             document.getElementById('no-vehicle-view').classList.add('hidden');
             document.getElementById('vehicle-view').classList.remove('hidden');
             document.getElementById('vehicle-lvl').innerText = this.planet.vehicle_level;
-            
-            const reduction = Math.round((1 - (1 / Math.pow(this.planet.vehicle_level || 1, 1.2))) * 100);
-            document.getElementById('vehicle-reduction').innerText = reduction;
 
-            // Sensor UI
             const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
             document.getElementById('vehicle-sensor-lvl').innerText = sensorLvl;
-            document.getElementById('vehicle-sensor-bonus').innerText = (sensorLvl - 1) * 5;
             
             const upgradeCost = (this.planet.vehicle_level + 1) * 500;
             const sensorCost = sensorLvl * 1000;
@@ -348,10 +373,50 @@ const game = {
                 document.getElementById('vehicle-hp-val').innerText = Math.floor(this.vehicleHP);
                 document.getElementById('vehicle-hp-bar').style.width = `${this.vehicleHP}%`;
                 document.getElementById('vehicle-crystals').innerText = Math.floor(this.vehicleCrystals);
-                document.getElementById('vehicle-status-text').innerText = this.planet.vehicle_status === 'exploring' ? '🛰️ Probíhá průzkum hlubokého vesmíru...' : '🚀 Vozidlo se vrací na základnu...';
+                document.getElementById('vehicle-status-text').innerText = this.planet.vehicle_status === 'exploring' ? '🛰️ Probíhá průzkum...' : '🚀 Vozidlo se vrací...';
                 document.getElementById('vehicle-hp-bar').style.background = this.vehicleHP < 30 ? '#ff4a4a' : '#28a745';
                 document.getElementById('recall-btn').classList.toggle('hidden', this.planet.vehicle_status === 'returning');
             }
+        }
+
+        // Vehicle II UI (Copper)
+        if (this.planet.research_copper) {
+            document.getElementById('hangar2-section').classList.remove('hidden');
+            if (this.planet.vehicle2_level === 0 && this.planet.vehicle2_status !== 'destroyed') {
+                document.getElementById('no-vehicle2-view').classList.remove('hidden');
+                document.getElementById('vehicle2-view').classList.add('hidden');
+            } else {
+                document.getElementById('no-vehicle2-view').classList.add('hidden');
+                document.getElementById('vehicle2-view').classList.remove('hidden');
+                document.getElementById('vehicle2-lvl').innerText = this.planet.vehicle2_level;
+
+                const sensor2Lvl = this.planet.vehicle2_sensor_lvl || 1;
+                document.getElementById('vehicle2-sensor-lvl').innerText = sensor2Lvl;
+                
+                const upgrade2Cost = (this.planet.vehicle2_level + 1) * 100;
+                const sensor2Cost = sensor2Lvl * 150;
+
+                document.getElementById('vehicle2-upgrade-cost').innerText = upgrade2Cost;
+                document.getElementById('vehicle2-sensor-cost').innerText = sensor2Cost;
+
+                document.getElementById('upgrade-vehicle2-btn').disabled = this.displayCopper < upgrade2Cost;
+                document.getElementById('upgrade-sensors2-btn').disabled = this.displayCopper < sensor2Cost;
+
+                document.getElementById('vehicle2-idle').classList.toggle('hidden', this.planet.vehicle2_status !== 'idle');
+                document.getElementById('vehicle2-active').classList.toggle('hidden', this.planet.vehicle2_status !== 'exploring' && this.planet.vehicle2_status !== 'returning');
+                document.getElementById('vehicle2-destroyed').classList.toggle('hidden', this.planet.vehicle2_status !== 'destroyed');
+
+                if (this.planet.vehicle2_status === 'exploring' || this.planet.vehicle2_status === 'returning') {
+                    document.getElementById('vehicle2-hp-val').innerText = Math.floor(this.vehicle2HP);
+                    document.getElementById('vehicle2-hp-bar').style.width = `${this.vehicle2HP}%`;
+                    document.getElementById('vehicle2-crystals').innerText = Math.floor(this.vehicle2Crystals);
+                    document.getElementById('vehicle2-status-text').innerText = this.planet.vehicle2_status === 'exploring' ? '🛰️ Probíhá průzkum...' : '🚀 Vozidlo se vrací...';
+                    document.getElementById('vehicle2-hp-bar').style.background = this.vehicle2HP < 30 ? '#ff4a4a' : '#28a745';
+                    document.getElementById('recall2-btn').classList.toggle('hidden', this.planet.vehicle2_status === 'returning');
+                }
+            }
+        } else {
+            document.getElementById('hangar2-section').classList.add('hidden');
         }
 
         // Drone UI
@@ -359,19 +424,15 @@ const game = {
             document.getElementById('no-drone-view').classList.add('hidden');
             document.getElementById('drone-view').classList.remove('hidden');
             const limit = this.planet.drone_storage_limit || 100;
+
             document.getElementById('drone-storage-val').innerText = Math.floor(this.displayDrone);
-            
-            // Update limit display if exists, else it might be hardcoded in HTML, but let's be safe
-            const droneStorageText = document.querySelector('#drone-view p');
-            if (droneStorageText) {
-                droneStorageText.innerHTML = `Zásoba: <span id="drone-storage-val">${Math.floor(this.displayDrone)}</span> / ${limit} 💎`;
-            }
+            const limitEl = document.getElementById('drone-storage-limit');
+            if (limitEl) limitEl.innerText = limit;
 
             const progress = (this.displayDrone / limit) * 100;
             document.getElementById('drone-progress-bar').style.width = `${Math.min(100, progress)}%`;
             document.getElementById('collect-drone-btn').disabled = this.displayDrone < 1;
-        } else {
-            document.getElementById('no-drone-view').classList.remove('hidden');
+        } else {            document.getElementById('no-drone-view').classList.remove('hidden');
             document.getElementById('drone-view').classList.add('hidden');
         }
     },
@@ -417,10 +478,25 @@ const game = {
         if (data.success) this.fetchPlanet();
     },
 
+    async buyVehicle2() {
+        if (this.displayCopper < 500) return alert("Nedostatek mědi (500 Cu)!");
+        const res = await fetch('api.php?action=buy_vehicle2', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
     async startExpedition() {
         const res = await fetch('api.php?action=start_expedition', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
+    },
+
+    async startExpedition2() {
+        const res = await fetch('api.php?action=start_expedition2', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
     },
 
     async recallVehicle() {
@@ -429,9 +505,23 @@ const game = {
         if (data.success) this.fetchPlanet();
     },
 
+    async recallVehicle2() {
+        const res = await fetch('api.php?action=recall_vehicle2', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
     async finishExpedition() {
         if (this.interval) clearInterval(this.interval);
         const res = await fetch('api.php?action=finish_expedition', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+    },
+
+    async finishExpedition2() {
+        if (this.interval) clearInterval(this.interval);
+        const res = await fetch('api.php?action=finish_expedition2', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
     },
@@ -443,6 +533,14 @@ const game = {
         if (data.success) this.fetchPlanet();
     },
 
+    async destroyVehicle2() {
+        if (this.interval) clearInterval(this.interval);
+        const res = await fetch('api.php?action=destroy_vehicle2', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+    }
+,
+
     async upgradeVehicle() {
         const res = await fetch('api.php?action=upgrade_vehicle', { method: 'POST' });
         const data = await res.json();
@@ -452,6 +550,20 @@ const game = {
 
     async upgradeVehicleSensors() {
         const res = await fetch('api.php?action=upgrade_vehicle_sensors', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeVehicle2Armor() {
+        const res = await fetch('api.php?action=upgrade_vehicle2_armor', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeVehicle2Sensors() {
+        const res = await fetch('api.php?action=upgrade_vehicle2_sensors', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);

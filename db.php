@@ -3,7 +3,7 @@
 
 // Disable error reporting to prevent warnings from breaking JSON output
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // Production: hide errors, they will be in logs or handled by try-catch
 
 // Set timezone to UTC (industry standard for backends)
 date_default_timezone_set('UTC');
@@ -65,7 +65,13 @@ $columnsToAdd = [
     'mine_copper_lvl' => "INTEGER DEFAULT 0",
     'warehouse_copper_lvl' => "INTEGER DEFAULT 0",
     'research_copper' => "INTEGER DEFAULT 0",
-    'research_drone_upgrade' => "INTEGER DEFAULT 0"
+    'research_drone_upgrade' => "INTEGER DEFAULT 0",
+    'vehicle2_level' => "INTEGER DEFAULT 0",
+    'vehicle2_hp' => "REAL DEFAULT 100",
+    'vehicle2_status' => "TEXT DEFAULT 'idle'",
+    'vehicle2_sensor_lvl' => "INTEGER DEFAULT 1",
+    'vehicle2_start_time' => "DATETIME",
+    'vehicle2_recall_time' => "DATETIME"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -173,7 +179,7 @@ function getPlanetData($userId, $db) {
             $newResData[$color]['amount'] += ($secondsElapsed * $newResData[$color]['prod'] * $productionFactor);
         }
         
-        // --- Vehicle Expedition Offline Logic ---
+        // --- Vehicle 1 Expedition Offline Logic ---
         $vehicleStatus = $planet['vehicle_status'] ?? 'idle';
         $vehicleHP = $planet['vehicle_hp'] ?? 100;
         $vehicleLevel = $planet['vehicle_level'] ?? 0;
@@ -212,6 +218,49 @@ function getPlanetData($userId, $db) {
                         $vehicleStatus = 'idle';
                         $vehicleHP = 100;
                         $db->prepare("UPDATE planets SET crystal_amount = ?, vehicle_status = 'idle', vehicle_hp = 100, last_updated = ? WHERE id = ?")->execute([$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
+                    }
+                }
+            }
+        }
+
+        // --- Vehicle 2 Expedition Offline Logic ---
+        $vehicle2Status = $planet['vehicle2_status'] ?? 'idle';
+        $vehicle2HP = $planet['vehicle2_hp'] ?? 100;
+        $vehicle2Level = $planet['vehicle2_level'] ?? 0;
+
+        if (($vehicle2Status === 'exploring' || $vehicle2Status === 'returning') && $vehicle2Level > 0) {
+            $startTimeStr = $planet['vehicle2_start_time'] ?? 'now';
+            $startTime = new DateTime($startTimeStr);
+            $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
+            
+            $baseDamageRate = 0.1; 
+            $acceleration = 0.006;
+            $armorFactor = pow($vehicle2Level, 1.2);
+            $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $armorFactor;
+
+            $currentHP = max(0, 100 - $totalDamage);
+            
+            if ($currentHP <= 0) {
+                $vehicle2Status = 'destroyed';
+                $vehicle2HP = 0;
+                $vehicle2Level = 0;
+                $db->prepare("UPDATE planets SET vehicle2_status = 'destroyed', vehicle2_level = 0, vehicle2_hp = 0, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), $planet['id']]);
+            } else {
+                $vehicle2HP = $currentHP;
+                if ($vehicle2Status === 'returning') {
+                    $recallTimeStr = $planet['vehicle2_recall_time'] ?? 'now';
+                    $recallTime = new DateTime($recallTimeStr);
+                    $secondsReturning = max(0, $now->getTimestamp() - $recallTime->getTimestamp());
+                    $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
+                    
+                    if ($secondsReturning >= $secondsToReturn) {
+                        $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
+                        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.05);
+                        $crystalsFound = floor($secondsToReturn * $crystalRate);
+                        $crystalAmount += $crystalsFound;
+                        $vehicle2Status = 'idle';
+                        $vehicle2HP = 100;
+                        $db->prepare("UPDATE planets SET crystal_amount = ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE id = ?")->execute([$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
                     }
                 }
             }
@@ -268,6 +317,12 @@ function getPlanetData($userId, $db) {
             'vehicle_status' => $vehicleStatus,
             'vehicle_start_time' => $planet['vehicle_start_time'] ?? null,
             'vehicle_recall_time' => $planet['vehicle_recall_time'] ?? null,
+            'vehicle2_level' => $vehicle2Level,
+            'vehicle2_sensor_lvl' => $planet['vehicle2_sensor_lvl'] ?? 1,
+            'vehicle2_hp' => $vehicle2HP,
+            'vehicle2_status' => $vehicle2Status,
+            'vehicle2_start_time' => $planet['vehicle2_start_time'] ?? null,
+            'vehicle2_recall_time' => $planet['vehicle2_recall_time'] ?? null,
             'last_updated' => $planet['last_updated'],
             'iron_production' => $ironProd,
             'energy_production' => $energyProd,
