@@ -60,7 +60,11 @@ $columnsToAdd = [
     'mine_purple_lvl' => "INTEGER DEFAULT 0",
     'has_drone' => "INTEGER DEFAULT 0",
     'drone_storage' => "REAL DEFAULT 0",
-    'vehicle_sensor_lvl' => "INTEGER DEFAULT 1"
+    'vehicle_sensor_lvl' => "INTEGER DEFAULT 1",
+    'res_copper' => "REAL DEFAULT 0",
+    'mine_copper_lvl' => "INTEGER DEFAULT 0",
+    'warehouse_copper_lvl' => "INTEGER DEFAULT 0",
+    'research_copper' => "INTEGER DEFAULT 0"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -115,7 +119,7 @@ function getPlanetData($userId, $db) {
         
         $ironProd = ($planet['mine_level'] ?? 1) * 1;
         $energyProd = ($planet['solar_plant_level'] ?? 1) * 2;
-        $ironLimit = ($planet['warehouse_level'] ?? 1) * 500;
+        $ironLimit = ($planet['warehouse_level'] ?? 1) * 1000;
         
         // --- New Materials Production ---
         $colors = ['yellow', 'red', 'blue', 'green', 'orange', 'purple'];
@@ -133,9 +137,16 @@ function getPlanetData($userId, $db) {
             $totalExtraEnergyNeeded += ($lvl * 0.3); // Each alien mine consumes energy
         }
         
+        // --- Copper Production ---
+        $copperLvl = $planet['mine_copper_lvl'] ?? 0;
+        $copperProd = $copperLvl * 0.1; // 10x slower than iron, 5x faster than alien materials
+        $copperLimit = ($planet['warehouse_copper_lvl'] ?? 0) * 1000 + 500;
+        $totalExtraEnergyNeeded += ($copperLvl * 0.5);
+
         $energyNeeded = ($ironProd * 0.5) + $totalExtraEnergyNeeded;
         $currentIron = $planet['iron_amount'] ?? 0;
         $currentEnergy = $planet['energy_amount'] ?? 0;
+        $currentCopper = $planet['res_copper'] ?? 0;
         
         $productionFactor = 1.0;
         if ($energyProd < $energyNeeded) {
@@ -151,6 +162,7 @@ function getPlanetData($userId, $db) {
 
         $newIron = min($ironLimit, $currentIron + ($secondsElapsed * $ironProd * $productionFactor));
         $newEnergy = max(0, $newEnergy);
+        $newCopper = min($copperLimit, $currentCopper + ($secondsElapsed * $copperProd * $productionFactor));
 
         // Update alien resources based on production factor
         $researchedStr = $planet['researched_colors'] ?? '';
@@ -218,6 +230,7 @@ function getPlanetData($userId, $db) {
             iron_amount = ?, energy_amount = ?, crystal_amount = ?, 
             res_yellow = ?, res_red = ?, res_blue = ?, 
             res_green = ?, res_orange = ?, res_purple = ?,
+            res_copper = ?,
             drone_storage = ?,
             last_updated = ? 
             WHERE id = ?";
@@ -226,6 +239,7 @@ function getPlanetData($userId, $db) {
             $newIron, $newEnergy, $crystalAmount,
             $newResData['yellow']['amount'], $newResData['red']['amount'], $newResData['blue']['amount'],
             $newResData['green']['amount'], $newResData['orange']['amount'], $newResData['purple']['amount'],
+            $newCopper,
             $droneStorage,
             date('Y-m-d H:i:s'), $planet['id']
         ]);
@@ -237,9 +251,13 @@ function getPlanetData($userId, $db) {
             'iron_amount' => $newIron,
             'energy_amount' => $newEnergy,
             'crystal_amount' => $crystalAmount,
+            'res_copper' => $newCopper,
             'mine_level' => $planet['mine_level'],
             'solar_plant_level' => $planet['solar_plant_level'],
             'warehouse_level' => $planet['warehouse_level'],
+            'mine_copper_lvl' => $planet['mine_copper_lvl'],
+            'warehouse_copper_lvl' => $planet['warehouse_copper_lvl'],
+            'research_copper' => $planet['research_copper'],
             'vehicle_level' => $vehicleLevel,
             'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
             'vehicle_hp' => $vehicleHP,
@@ -250,6 +268,8 @@ function getPlanetData($userId, $db) {
             'iron_production' => $ironProd,
             'energy_production' => $energyProd,
             'iron_storage_limit' => $ironLimit,
+            'copper_production' => $copperProd,
+            'copper_storage_limit' => $copperLimit,
             'researched_colors' => $researchedArr,
             'alien_resources' => $newResData,
             'has_drone' => $hasDrone,

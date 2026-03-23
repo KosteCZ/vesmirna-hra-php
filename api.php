@@ -90,6 +90,79 @@ if ($action === 'research_color') {
     }
 }
 
+if ($action === 'research_copper') {
+    $planet = getPlanetData($userId, $db);
+    if ($planet['research_copper']) {
+        echo json_encode(['error' => 'Měď je již vyzkoumána!']);
+        exit;
+    }
+    
+    // Condition: at least 2000 of any colored material
+    $hasEnoughMaterial = false;
+    foreach ($planet['alien_resources'] as $res) {
+        if ($res['amount'] >= 2000) {
+            $hasEnoughMaterial = true;
+            break;
+        }
+    }
+    
+    if (!$hasEnoughMaterial) {
+        echo json_encode(['error' => 'Potřebuješ alespoň 2000 jednoho druhu barevného materiálu!']);
+        exit;
+    }
+    
+    $ironCost = 50000;
+    $crystalCost = 50;
+    
+    if ($planet['iron_amount'] >= $ironCost && $planet['crystal_amount'] >= $crystalCost) {
+        $stmt = $db->prepare("UPDATE planets SET iron_amount = iron_amount - ?, crystal_amount = crystal_amount - ?, research_copper = 1, mine_copper_lvl = 1, warehouse_copper_lvl = 1, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([$ironCost, $crystalCost, date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Nedostatek surovin (50000 Fe, 50 Kryst.)!']);
+    }
+}
+
+if ($action === 'upgrade_copper_mine') {
+    $planet = getPlanetData($userId, $db);
+    if (!$planet['research_copper']) {
+        echo json_encode(['error' => 'Měď není vyzkoumána!']);
+        exit;
+    }
+    
+    $currentLevel = $planet['mine_copper_lvl'];
+    $ironCost = ($currentLevel + 1) * 1000;
+    $crystalCost = ($currentLevel + 1) * 10;
+    
+    if ($planet['iron_amount'] >= $ironCost && $planet['crystal_amount'] >= $crystalCost) {
+        $stmt = $db->prepare("UPDATE planets SET iron_amount = iron_amount - ?, crystal_amount = crystal_amount - ?, mine_copper_lvl = mine_copper_lvl + 1, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([$ironCost, $crystalCost, date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Nedostatek surovin!']);
+    }
+}
+
+if ($action === 'upgrade_copper_warehouse') {
+    $planet = getPlanetData($userId, $db);
+    if (!$planet['research_copper']) {
+        echo json_encode(['error' => 'Měď není vyzkoumána!']);
+        exit;
+    }
+    
+    $currentLevel = $planet['warehouse_copper_lvl'];
+    $ironCost = ($currentLevel + 1) * 2000;
+    $crystalCost = ($currentLevel + 1) * 20;
+    
+    if ($planet['iron_amount'] >= $ironCost && $planet['crystal_amount'] >= $crystalCost) {
+        $stmt = $db->prepare("UPDATE planets SET iron_amount = iron_amount - ?, crystal_amount = crystal_amount - ?, warehouse_copper_lvl = warehouse_copper_lvl + 1, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([$ironCost, $crystalCost, date('Y-m-d H:i:s'), $userId]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Nedostatek surovin!']);
+    }
+}
+
 if ($action === 'upgrade_alien_mine') {
     $color = $_POST['color'] ?? '';
     $planet = getPlanetData($userId, $db);

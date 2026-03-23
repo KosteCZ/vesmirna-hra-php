@@ -38,6 +38,7 @@ const game = {
     displayIron: 0,
     displayEnergy: 0,
     displayCrystal: 0,
+    displayCopper: 0,
     displayAlien: {}, // Tracks alien resource amounts locally
     displayDrone: 0, // Tracks drone storage locally
     vehicleHP: 100,
@@ -60,6 +61,7 @@ const game = {
             this.displayIron = this.planet.iron_amount;
             this.displayEnergy = this.planet.energy_amount;
             this.displayCrystal = this.planet.crystal_amount;
+            this.displayCopper = this.planet.res_copper || 0;
             this.displayDrone = this.planet.drone_storage || 0;
             
             // Sync alien resources
@@ -115,6 +117,8 @@ const game = {
             for (const color in this.planet.alien_resources) {
                 extraEnergyNeeded += (this.planet.alien_resources[color].lvl * 0.3);
             }
+            extraEnergyNeeded += (this.planet.mine_copper_lvl * 0.5);
+
             const totalEnergyNeeded = (ironProd * 0.5) + extraEnergyNeeded;
 
             // Resource Production
@@ -131,6 +135,11 @@ const game = {
 
             if (this.displayIron < ironLimit) {
                 this.displayIron += (ironProd / 10) * prodFactor;
+            }
+
+            // Copper Production
+            if (this.planet.research_copper && this.displayCopper < this.planet.copper_storage_limit) {
+                this.displayCopper += (this.planet.copper_production / 10) * prodFactor;
             }
 
             // Alien Production
@@ -222,6 +231,60 @@ const game = {
         document.getElementById('upgrade-mine').disabled = this.displayIron < mineCost;
         document.getElementById('upgrade-solar').disabled = this.displayIron < solarCost;
         document.getElementById('upgrade-warehouse').disabled = this.displayIron < warehouseCost;
+
+        // Copper UI
+        if (this.planet.research_copper) {
+            document.getElementById('res-copper-card').classList.remove('hidden');
+            document.getElementById('copper-buildings').classList.remove('hidden');
+            document.getElementById('copper-research-container').classList.add('hidden');
+            
+            const copperLimit = this.planet.copper_storage_limit;
+            document.getElementById('display-copper').innerText = Math.floor(this.displayCopper);
+            document.getElementById('display-copper-limit').innerText = copperLimit;
+            document.getElementById('copper-prod').innerText = this.planet.copper_production.toFixed(2);
+            
+            const copperProgress = (this.displayCopper / copperLimit) * 100;
+            document.getElementById('copper-progress').style.width = `${Math.min(100, copperProgress)}%`;
+            
+            const copperMineLvl = this.planet.mine_copper_lvl;
+            const copperWarehouseLvl = this.planet.warehouse_copper_lvl;
+            
+            document.getElementById('mine-copper-lvl').innerText = copperMineLvl;
+            document.getElementById('warehouse-copper-lvl').innerText = copperWarehouseLvl;
+            
+            const copperMineIronCost = (copperMineLvl + 1) * 1000;
+            const copperMineCrystalCost = (copperMineLvl + 1) * 10;
+            const copperWarehouseIronCost = (copperWarehouseLvl + 1) * 2000;
+            const copperWarehouseCrystalCost = (copperWarehouseLvl + 1) * 20;
+            
+            document.getElementById('mine-copper-cost').innerText = `(${copperMineIronCost} Fe, ${copperMineCrystalCost} Kryst.)`;
+            document.getElementById('warehouse-copper-cost').innerText = `(${copperWarehouseIronCost} Fe, ${copperWarehouseCrystalCost} Kryst.)`;
+            
+            document.getElementById('upgrade-mine-copper').disabled = this.displayIron < copperMineIronCost || this.displayCrystal < copperMineCrystalCost;
+            document.getElementById('upgrade-warehouse-copper').disabled = this.displayIron < copperWarehouseIronCost || this.displayCrystal < copperWarehouseCrystalCost;
+        } else {
+            document.getElementById('res-copper-card').classList.add('hidden');
+            document.getElementById('copper-buildings').classList.add('hidden');
+            document.getElementById('copper-research-container').classList.remove('hidden');
+            
+            const ironCost = 50000;
+            const crystalCost = 50;
+            
+            let hasEnoughMaterial = false;
+            for (const color in this.displayAlien) {
+                if (this.displayAlien[color] >= 2000) hasEnoughMaterial = true;
+            }
+            
+            const btn = document.getElementById('research-copper-btn');
+            if (btn) {
+                btn.disabled = this.displayIron < ironCost || this.displayCrystal < crystalCost || !hasEnoughMaterial;
+            }
+            
+            const desc = document.getElementById('copper-research-desc');
+            if (desc) {
+                desc.style.color = hasEnoughMaterial ? '#888' : '#ff4a4a';
+            }
+        }
 
         // Update Alien Resource Values in UI
         for (const color in this.displayAlien) {
@@ -353,6 +416,27 @@ const game = {
 
     async upgradeVehicleSensors() {
         const res = await fetch('api.php?action=upgrade_vehicle_sensors', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async researchCopper() {
+        const res = await fetch('api.php?action=research_copper', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeCopperMine() {
+        const res = await fetch('api.php?action=upgrade_copper_mine', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeCopperWarehouse() {
+        const res = await fetch('api.php?action=upgrade_copper_warehouse', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);

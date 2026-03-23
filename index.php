@@ -48,6 +48,10 @@ session_start();
             <circle cx="12" cy="12" r="3" />
             <path d="M18 6l-4 4M6 18l4-4M6 6l4 4M18 18l-4-4" />
         </symbol>
+        <symbol id="icon-copper" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v8M8 12h8" />
+        </symbol>
     </svg>
 
     <main>
@@ -120,6 +124,18 @@ session_start();
                         <span class="value" id="display-crystal">0</span>
                     </div>
                 </div>
+
+                <div id="res-copper-card" class="res-card copper hidden" style="border-color: #b87333;">
+                    <div class="res-icon" style="color: #b87333;"><svg width="24" height="24"><use href="#icon-copper"/></svg></div>
+                    <div class="res-data">
+                        <span class="label">Měď</span>
+                        <span class="value"><span id="display-copper">0</span> <small>/ <span id="display-copper-limit">0</span></small></span>
+                        <div class="progress-bg">
+                            <div id="copper-progress" class="progress-bar" style="width: 0%; background: #b87333;"></div>
+                        </div>
+                        <span class="prod">+<span id="copper-prod">0</span>/s</span>
+                    </div>
+                </div>
             </section>
 
             <!-- Alien Resource Section (Dynamic) -->
@@ -151,7 +167,7 @@ session_start();
 
                 <div class="building-card">
                     <svg width="40" height="40"><use href="#icon-warehouse"/></svg>
-                    <h3>Sklad surovin</h3>
+                    <h3>Sklad železa</h3>
                     <p class="lvl">Úroveň <span id="warehouse-lvl">0</span></p>
                     <p class="desc">Zvyšuje maximální kapacitu železa.</p>
                     <button onclick="game.upgrade('warehouse')" id="upgrade-warehouse">
@@ -160,10 +176,34 @@ session_start();
                 </div>
             </section>
 
+            <!-- Copper Buildings Section -->
+            <section id="copper-buildings" class="buildings hidden" style="margin-top: 20px;">
+                <div class="building-card" style="border-color: #b87333;">
+                    <svg width="40" height="40" style="color: #b87333;"><use href="#icon-mine"/></svg>
+                    <h3>Důl na měď</h3>
+                    <p class="lvl">Úroveň <span id="mine-copper-lvl">0</span></p>
+                    <p class="desc">Produkuje měď pro pokročilé stavby.</p>
+                    <button onclick="game.upgradeCopperMine()" id="upgrade-mine-copper">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="mine-copper-cost"></span>
+                    </button>
+                </div>
+
+                <div class="building-card" style="border-color: #b87333;">
+                    <svg width="40" height="40" style="color: #b87333;"><use href="#icon-warehouse"/></svg>
+                    <h3>Sklad mědi</h3>
+                    <p class="lvl">Úroveň <span id="warehouse-copper-lvl">0</span></p>
+                    <p class="desc">Zvyšuje maximální kapacitu mědi.</p>
+                    <button onclick="game.upgradeCopperWarehouse()" id="upgrade-warehouse-copper">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="warehouse-copper-cost"></span>
+                    </button>
+                </div>
+            </section>
+
             <!-- Alien Buildings Section (Dynamic) -->
             <section id="alien-buildings" class="buildings alien-bld hidden">
                 <!-- Filled by JS -->
             </section>
+
 
             <!-- Expedition Section -->
             <section class="expedition card" style="margin-bottom: 30px;">
@@ -254,6 +294,14 @@ session_start();
                 </div>
                 <div id="color-options" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 15px;">
                     <!-- Research buttons -->
+                </div>
+
+                <div id="copper-research-container" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Pokročilá metalurgie</strong></p>
+                    <p id="copper-research-desc" style="font-size: 0.9rem; color: #888;">Umožňuje těžbu a skladování mědi. Vyžaduje 2000 jednoho druhu barevného materiálu.</p>
+                    <button id="research-copper-btn" onclick="game.researchCopper()" style="background: #b87333; margin-top: 10px;">
+                        Vyzkoumat Měď (50000 Fe, 50 Kryst.)
+                    </button>
                 </div>
             </section>
 
