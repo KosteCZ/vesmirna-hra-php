@@ -64,7 +64,8 @@ $columnsToAdd = [
     'res_copper' => "REAL DEFAULT 0",
     'mine_copper_lvl' => "INTEGER DEFAULT 0",
     'warehouse_copper_lvl' => "INTEGER DEFAULT 0",
-    'research_copper' => "INTEGER DEFAULT 0"
+    'research_copper' => "INTEGER DEFAULT 0",
+    'research_drone_upgrade' => "INTEGER DEFAULT 0"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -219,10 +220,12 @@ function getPlanetData($userId, $db) {
         // --- Drone Logic ---
         $hasDrone = $planet['has_drone'] ?? 0;
         $droneStorage = $planet['drone_storage'] ?? 0;
+        $droneUpgrade = $planet['research_drone_upgrade'] ?? 0;
         if ($hasDrone) {
-            $droneProdPerSec = 1 / 300; // 1 crystal / 300 seconds
+            $droneProdPerSec = (1 / 300) * ($droneUpgrade ? 5 : 1); // 1 crystal / 300 seconds, 5x if upgraded
+            $droneLimit = $droneUpgrade ? 500 : 100;
             $droneStorage += ($secondsElapsed * $droneProdPerSec);
-            $droneStorage = min(100, $droneStorage);
+            $droneStorage = min($droneLimit, $droneStorage);
         }
 
         // --- PERSISTENCE: Save calculated resources back to DB ---
@@ -258,6 +261,7 @@ function getPlanetData($userId, $db) {
             'mine_copper_lvl' => $planet['mine_copper_lvl'],
             'warehouse_copper_lvl' => $planet['warehouse_copper_lvl'],
             'research_copper' => $planet['research_copper'],
+            'research_drone_upgrade' => $planet['research_drone_upgrade'],
             'vehicle_level' => $vehicleLevel,
             'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
             'vehicle_hp' => $vehicleHP,
@@ -270,6 +274,7 @@ function getPlanetData($userId, $db) {
             'iron_storage_limit' => $ironLimit,
             'copper_production' => $copperProd,
             'copper_storage_limit' => $copperLimit,
+            'drone_storage_limit' => $droneUpgrade ? 500 : 100,
             'researched_colors' => $researchedArr,
             'alien_resources' => $newResData,
             'has_drone' => $hasDrone,

@@ -150,7 +150,9 @@ const game = {
 
             // Drone Production (1 crystal / 5 min = 1/300 per sec)
             if (this.planet.has_drone) {
-                this.displayDrone = Math.min(100, this.displayDrone + (1 / 3000)); // 1/300 per sec, but loop is 0.1s
+                const prod = (1 / 3000) * (this.planet.research_drone_upgrade ? 5 : 1); // 1/300 per sec, loop is 0.1s, 5x if upgraded
+                const limit = this.planet.drone_storage_limit || 100;
+                this.displayDrone = Math.min(limit, this.displayDrone + prod);
             }
 
             // Vehicle Expedition Logic
@@ -286,6 +288,18 @@ const game = {
             }
         }
 
+        // Drone Upgrade Research UI
+        const droneResContainer = document.getElementById('drone-research-container');
+        if (this.planet.research_copper && !this.planet.research_drone_upgrade) {
+            droneResContainer.classList.remove('hidden');
+            const btn = document.getElementById('research-drone-btn');
+            if (btn) {
+                btn.disabled = this.displayCopper < 100;
+            }
+        } else {
+            droneResContainer.classList.add('hidden');
+        }
+
         // Update Alien Resource Values in UI
         for (const color in this.displayAlien) {
             const el = document.getElementById(`display-res-${color}`);
@@ -344,13 +358,29 @@ const game = {
         if (this.planet.has_drone) {
             document.getElementById('no-drone-view').classList.add('hidden');
             document.getElementById('drone-view').classList.remove('hidden');
+            const limit = this.planet.drone_storage_limit || 100;
             document.getElementById('drone-storage-val').innerText = Math.floor(this.displayDrone);
-            document.getElementById('drone-progress-bar').style.width = `${this.displayDrone}%`;
+            
+            // Update limit display if exists, else it might be hardcoded in HTML, but let's be safe
+            const droneStorageText = document.querySelector('#drone-view p');
+            if (droneStorageText) {
+                droneStorageText.innerHTML = `Zásoba: <span id="drone-storage-val">${Math.floor(this.displayDrone)}</span> / ${limit} 💎`;
+            }
+
+            const progress = (this.displayDrone / limit) * 100;
+            document.getElementById('drone-progress-bar').style.width = `${Math.min(100, progress)}%`;
             document.getElementById('collect-drone-btn').disabled = this.displayDrone < 1;
         } else {
             document.getElementById('no-drone-view').classList.remove('hidden');
             document.getElementById('drone-view').classList.add('hidden');
         }
+    },
+
+    async researchDroneUpgrade() {
+        const res = await fetch('api.php?action=research_drone_upgrade', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
     },
 
     async upgrade(type) {
@@ -365,8 +395,14 @@ const game = {
         
         if (data.success) {
             this.planet = data.planet;
+            // Sync ALL resources to ensure UI is immediately correct
             this.displayIron = this.planet.iron_amount;
             this.displayEnergy = this.planet.energy_amount;
+            this.displayCrystal = this.planet.crystal_amount;
+            this.displayCopper = this.planet.res_copper || 0;
+            this.displayDrone = this.planet.drone_storage || 0;
+            
+            this.updateUI(); // Immediate update
             this.startLoop();
             this.fetchLeaderboard();
         } else {
