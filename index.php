@@ -52,6 +52,12 @@ session_start();
             <circle cx="12" cy="12" r="9" />
             <path d="M12 8v8M8 12h8" />
         </symbol>
+        <symbol id="icon-tube" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 2v17.5A2.5 2.5 0 0 0 11.5 22h0a2.5 2.5 0 0 0 2.5-2.5V2M9 8h5M9 14h5"/>
+        </symbol>
+        <symbol id="icon-lab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 2v7.5M14 2v7.5M8.5 13h7M7 9h10l3 13H4L7 9z"/>
+        </symbol>
     </svg>
 
     <main>
@@ -136,6 +142,18 @@ session_start();
                         <span class="prod">+<span id="copper-prod">0</span>/s</span>
                     </div>
                 </div>
+
+                <div id="res-tubes-card" class="res-card tubes hidden" style="border-color: #00d2ff;">
+                    <div class="res-icon" style="color: #00d2ff;"><svg width="24" height="24"><use href="#icon-tube"/></svg></div>
+                    <div class="res-data">
+                        <span class="label">Zkumavky</span>
+                        <span class="value"><span id="display-tubes">0</span> <small>/ <span id="display-tubes-limit">0</span></small></span>
+                        <div class="progress-bg">
+                            <div id="tubes-progress" class="progress-bar" style="width: 0%; background: #00d2ff;"></div>
+                        </div>
+                        <span class="prod">+<span id="tube-prod-val">0.00</span>/s</span>
+                    </div>
+                </div>
             </section>
 
             <!-- Alien Resource Section (Dynamic) -->
@@ -195,6 +213,29 @@ session_start();
                     <p class="desc">Zvyšuje maximální kapacitu mědi.</p>
                     <button onclick="game.upgradeCopperWarehouse()" id="upgrade-warehouse-copper">
                         Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="warehouse-copper-cost"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Advanced Lab Buildings -->
+            <section id="lab-buildings" class="buildings hidden" style="margin-top: 20px;">
+                <div class="building-card" style="border-color: #00d2ff;">
+                    <svg width="40" height="40" style="color: #00d2ff;"><use href="#icon-lab"/></svg>
+                    <h3>Pokročilá laboratoř</h3>
+                    <p class="lvl">Úroveň <span id="lab-lvl">0</span></p>
+                    <p class="desc">Vyrábí zkumavky pro vědecké účely.</p>
+                    <button onclick="game.upgradeLab()" id="upgrade-lab-btn">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="lab-upgrade-cost"></span>
+                    </button>
+                </div>
+
+                <div class="building-card" style="border-color: #00d2ff;">
+                    <svg width="40" height="40" style="color: #00d2ff;"><use href="#icon-warehouse"/></svg>
+                    <h3>Sklad zkumavek</h3>
+                    <p class="lvl">Úroveň <span id="lab-storage-lvl">0</span></p>
+                    <p class="desc">Zvětšuje prostor pro hotové zkumavky.</p>
+                    <button onclick="game.upgradeLabStorage()" id="upgrade-lab-storage-btn">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="lab-storage-upgrade-cost"></span>
                     </button>
                 </div>
             </section>
@@ -377,6 +418,14 @@ session_start();
                     <p id="drone-research-2-desc" style="font-size: 0.9rem; color: #888;">Zvyšuje produkci a kapacitu drona na 25x základní hodnoty. Vyžaduje 2 barvy.</p>
                     <button id="research-drone-2-btn" onclick="game.researchDroneUpgrade2()" style="background: #bc4aff; margin-top: 10px;">
                         Vylepšit drony II (500 Mědi)
+                    </button>
+                </div>
+
+                <div id="lab-research-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Pokročilá laboratoř</strong></p>
+                    <p id="lab-research-desc" style="font-size: 0.9rem; color: #888;">Odemkne výrobu zkumavek pro pokročilý výzkum. Vyžaduje 2 barvy a dosažení součtu všech barevných materiálů v hodnotě 10 000.</p>
+                    <button id="research-lab-btn" onclick="game.researchAdvancedLab()" style="background: #00d2ff; color: black; margin-top: 10px;">
+                        Postavit laboratoř (5000 Mědi)
                     </button>
                 </div>
             </section>

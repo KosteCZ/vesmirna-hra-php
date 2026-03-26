@@ -72,7 +72,11 @@ $columnsToAdd = [
     'vehicle2_status' => "TEXT DEFAULT 'idle'",
     'vehicle2_sensor_lvl' => "INTEGER DEFAULT 1",
     'vehicle2_start_time' => "DATETIME",
-    'vehicle2_recall_time' => "DATETIME"
+    'vehicle2_recall_time' => "DATETIME",
+    'res_tubes' => "REAL DEFAULT 0",
+    'lab_level' => "INTEGER DEFAULT 0",
+    'lab_storage_level' => "INTEGER DEFAULT 0",
+    'research_advanced_lab' => "INTEGER DEFAULT 0"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -171,6 +175,16 @@ function getPlanetData($userId, $db) {
         $newIron = min($ironLimit, $currentIron + ($secondsElapsed * $ironProd * $productionFactor));
         $newEnergy = max(0, $newEnergy);
         $newCopper = min($copperLimit, $currentCopper + ($secondsElapsed * $copperProd * $productionFactor));
+
+        // --- Advanced Lab: Test Tubes Production ---
+        $labLvl = $planet['lab_level'] ?? 0;
+        $labStorageLvl = $planet['lab_storage_level'] ?? 0;
+        $tubeProd = $labLvl * 0.05; // Base production rate
+        $tubeLimit = ($labStorageLvl > 0) ? ($labStorageLvl * 500) : 100;
+        $currentTubes = $planet['res_tubes'] ?? 0;
+        $newTubes = min($tubeLimit, $currentTubes + ($secondsElapsed * $tubeProd * $productionFactor));
+        
+        $totalExtraEnergyNeeded += ($labLvl * 1.5); // Lab consumes more energy
 
         // Update alien resources based on production factor
         $researchedStr = $planet['researched_colors'] ?? '';
@@ -296,6 +310,7 @@ function getPlanetData($userId, $db) {
             res_yellow = ?, res_red = ?, res_blue = ?, 
             res_green = ?, res_orange = ?, res_purple = ?,
             res_copper = ?,
+            res_tubes = ?,
             drone_storage = ?,
             last_updated = ? 
             WHERE id = ?";
@@ -305,6 +320,7 @@ function getPlanetData($userId, $db) {
             $newResData['yellow']['amount'], $newResData['red']['amount'], $newResData['blue']['amount'],
             $newResData['green']['amount'], $newResData['orange']['amount'], $newResData['purple']['amount'],
             $newCopper,
+            $newTubes,
             $droneStorage,
             date('Y-m-d H:i:s'), $planet['id']
         ]);
@@ -325,6 +341,12 @@ function getPlanetData($userId, $db) {
             'research_copper' => $planet['research_copper'],
             'research_drone_upgrade' => $planet['research_drone_upgrade'],
             'research_drone_upgrade_2' => $planet['research_drone_upgrade_2'],
+            'research_advanced_lab' => $planet['research_advanced_lab'] ?? 0,
+            'lab_level' => $labLvl,
+            'lab_storage_level' => $labStorageLvl,
+            'res_tubes' => $newTubes,
+            'tube_production' => $tubeProd,
+            'tube_storage_limit' => $tubeLimit,
             'vehicle_level' => $vehicleLevel,
             'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
             'vehicle_hp' => $vehicleHP,

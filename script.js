@@ -39,6 +39,7 @@ const game = {
     displayEnergy: 0,
     displayCrystal: 0,
     displayCopper: 0,
+    displayTubes: 0, // Tracks test tubes locally
     displayAlien: {}, // Tracks alien resource amounts locally
     displayDrone: 0, // Tracks drone storage locally
     vehicleHP: 100,
@@ -64,6 +65,7 @@ const game = {
             this.displayEnergy = this.planet.energy_amount;
             this.displayCrystal = this.planet.crystal_amount;
             this.displayCopper = this.planet.res_copper || 0;
+            this.displayTubes = this.planet.res_tubes || 0;
             this.displayDrone = this.planet.drone_storage || 0;
             this.vehicleHP = this.planet.vehicle_hp || 100;
             this.vehicle2HP = this.planet.vehicle2_hp || 100;
@@ -122,6 +124,9 @@ const game = {
                 extraEnergyNeeded += (this.planet.alien_resources[color].lvl * 0.3);
             }
             extraEnergyNeeded += (this.planet.mine_copper_lvl * 0.5);
+            if (this.planet.research_advanced_lab) {
+                extraEnergyNeeded += (this.planet.lab_level * 1.5);
+            }
 
             const totalEnergyNeeded = (ironProd * 0.5) + extraEnergyNeeded;
 
@@ -150,6 +155,12 @@ const game = {
             for (const color in this.planet.alien_resources) {
                 const prod = this.planet.alien_resources[color].prod;
                 this.displayAlien[color] += (prod / 10) * prodFactor;
+            }
+
+            // Advanced Lab Production (Test Tubes)
+            if (this.planet.research_advanced_lab && this.displayTubes < this.planet.tube_storage_limit) {
+                const tubeProd = this.planet.tube_production;
+                this.displayTubes += (tubeProd / 10) * prodFactor;
             }
 
             // Drone Production (1 crystal / 300 seconds base)
@@ -257,14 +268,29 @@ const game = {
         const progress = (this.displayIron / ironLimit) * 100;
         document.getElementById('iron-progress').style.width = `${Math.min(100, progress)}%`;
         
-        document.getElementById('mine-lvl').innerText = this.planet.mine_level;
-        document.getElementById('solar-lvl').innerText = this.planet.solar_plant_level;
-        document.getElementById('warehouse-lvl').innerText = this.planet.warehouse_level;
-        
+        // Test Tubes Card
+        const tubesCard = document.getElementById('res-tubes-card');
+        if (this.planet.research_advanced_lab) {
+            tubesCard.classList.remove('hidden');
+            const tubeLimit = this.planet.tube_storage_limit;
+            document.getElementById('display-tubes').innerText = Math.floor(this.displayTubes);
+            document.getElementById('display-tubes-limit').innerText = tubeLimit;
+            document.getElementById('tube-prod-val').innerText = (this.planet.tube_production || 0).toFixed(2);
+            
+            const tubeProgress = (this.displayTubes / tubeLimit) * 100;
+            document.getElementById('tubes-progress').style.width = `${Math.min(100, tubeProgress)}%`;
+        } else {
+            tubesCard.classList.add('hidden');
+        }
+
         const mineCost = 100 * this.planet.mine_level;
         const solarCost = 100 * this.planet.solar_plant_level;
         const warehouseCost = 100 * this.planet.warehouse_level;
         
+        document.getElementById('mine-lvl').innerText = this.planet.mine_level;
+        document.getElementById('solar-lvl').innerText = this.planet.solar_plant_level;
+        document.getElementById('warehouse-lvl').innerText = this.planet.warehouse_level;
+
         document.getElementById('mine-cost').innerText = `(${mineCost} Fe)`;
         document.getElementById('solar-cost').innerText = `(${solarCost} Fe)`;
         document.getElementById('warehouse-cost').innerText = `(${warehouseCost} Fe)`;
@@ -325,6 +351,61 @@ const game = {
             if (desc) {
                 desc.style.color = hasEnoughMaterial ? '#888' : '#ff4a4a';
             }
+        }
+
+        // Advanced Lab Research UI
+        const labResContainer = document.getElementById('lab-research-container');
+        if (this.planet && !this.planet.research_advanced_lab) {
+            let totalColored = 0;
+            for (const color in this.displayAlien) {
+                totalColored += this.displayAlien[color];
+            }
+            const researchedCount = (this.planet.researched_colors || []).length;
+            
+            if (researchedCount >= 2) {
+                labResContainer.classList.remove('hidden');
+                const btn = document.getElementById('research-lab-btn');
+                const cost = 5000;
+                btn.disabled = this.displayCopper < cost || totalColored < 10000;
+                
+                const labDesc = document.getElementById('lab-research-desc');
+                if (totalColored < 10000) {
+                    labDesc.innerText = `Vyžaduje 10 000 barevného materiálu (máš ${Math.floor(totalColored)}).`;
+                    labDesc.style.color = '#ff4a4a';
+                } else {
+                    labDesc.innerText = 'Odemkne výrobu zkumavek pro pokročilý výzkum.';
+                    labDesc.style.color = '#888';
+                }
+            } else {
+                labResContainer.classList.add('hidden');
+            }
+        } else {
+            labResContainer.classList.add('hidden');
+        }
+
+        // Advanced Lab Buildings UI
+        const labBuildings = document.getElementById('lab-buildings');
+        if (this.planet && this.planet.research_advanced_lab) {
+            labBuildings.classList.remove('hidden');
+            
+            const labLvl = this.planet.lab_level;
+            const labStorageLvl = this.planet.lab_storage_level;
+            
+            document.getElementById('lab-lvl').innerText = labLvl;
+            document.getElementById('lab-storage-lvl').innerText = labStorageLvl;
+            
+            const labIronCost = (labLvl + 1) * 5000;
+            const labCrystalCost = (labLvl + 1) * 100;
+            const storageIronCost = (labStorageLvl + 1) * 8000;
+            const storageCrystalCost = (labStorageLvl + 1) * 150;
+            
+            document.getElementById('lab-upgrade-cost').innerText = `(${labIronCost} Fe, ${labCrystalCost} Kryst.)`;
+            document.getElementById('lab-storage-upgrade-cost').innerText = `(${storageIronCost} Fe, ${storageCrystalCost} Kryst.)`;
+            
+            document.getElementById('upgrade-lab-btn').disabled = this.displayIron < labIronCost || this.displayCrystal < labCrystalCost;
+            document.getElementById('upgrade-lab-storage-btn').disabled = this.displayIron < storageIronCost || this.displayCrystal < storageCrystalCost;
+        } else {
+            labBuildings.classList.add('hidden');
         }
 
         // Drone Upgrade Research UI
@@ -457,7 +538,8 @@ const game = {
             const progress = (this.displayDrone / limit) * 100;
             document.getElementById('drone-progress-bar').style.width = `${Math.min(100, progress)}%`;
             document.getElementById('collect-drone-btn').disabled = this.displayDrone < 1;
-        } else {            document.getElementById('no-drone-view').classList.remove('hidden');
+        } else {
+            document.getElementById('no-drone-view').classList.remove('hidden');
             document.getElementById('drone-view').classList.add('hidden');
         }
     },
@@ -487,16 +569,7 @@ const game = {
         const data = await res.json();
         
         if (data.success) {
-            this.planet = data.planet;
-            // Sync ALL resources to ensure UI is immediately correct
-            this.displayIron = this.planet.iron_amount;
-            this.displayEnergy = this.planet.energy_amount;
-            this.displayCrystal = this.planet.crystal_amount;
-            this.displayCopper = this.planet.res_copper || 0;
-            this.displayDrone = this.planet.drone_storage || 0;
-            
-            this.updateUI(); // Immediate update
-            this.startLoop();
+            this.fetchPlanet();
             this.fetchLeaderboard();
         } else {
             alert(data.error);
@@ -570,8 +643,7 @@ const game = {
         const res = await fetch('api.php?action=destroy_vehicle2', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
-    }
-,
+    },
 
     async upgradeVehicle() {
         const res = await fetch('api.php?action=upgrade_vehicle', { method: 'POST' });
@@ -617,6 +689,27 @@ const game = {
 
     async upgradeCopperWarehouse() {
         const res = await fetch('api.php?action=upgrade_copper_warehouse', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async researchAdvancedLab() {
+        const res = await fetch('api.php?action=research_advanced_lab', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeLab() {
+        const res = await fetch('api.php?action=upgrade_lab', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeLabStorage() {
+        const res = await fetch('api.php?action=upgrade_lab_storage', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);
