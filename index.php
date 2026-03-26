@@ -365,10 +365,18 @@ session_start();
                 </div>
 
                 <div id="drone-research-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
-                    <p><strong>Pokročilá robotika</strong></p>
+                    <p><strong>Pokročilá robotika I</strong></p>
                     <p id="drone-research-desc" style="font-size: 0.9rem; color: #888;">Zvyšuje produkci a kapacitu drona 5x.</p>
                     <button id="research-drone-btn" onclick="game.researchDroneUpgrade()" style="background: #bc4aff; margin-top: 10px;">
                         Vylepšit drony (100 Mědi)
+                    </button>
+                </div>
+
+                <div id="drone-research-2-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Pokročilá robotika II</strong></p>
+                    <p id="drone-research-2-desc" style="font-size: 0.9rem; color: #888;">Zvyšuje produkci a kapacitu drona na 25x základní hodnoty. Vyžaduje 2 barvy.</p>
+                    <button id="research-drone-2-btn" onclick="game.researchDroneUpgrade2()" style="background: #bc4aff; margin-top: 10px;">
+                        Vylepšit drony II (500 Mědi)
                     </button>
                 </div>
             </section>

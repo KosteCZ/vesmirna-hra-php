@@ -154,6 +154,33 @@ try {
         }
     }
 
+    if ($action === 'research_drone_upgrade_2') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_copper']) {
+            echo json_encode(['error' => 'Musíš mít nejdříve vyzkoumanou Měď!']);
+            exit;
+        }
+        if ($planet['research_drone_upgrade_2']) {
+            echo json_encode(['error' => 'Vylepšení drona II je již vyzkoumáno!']);
+            exit;
+        }
+        
+        // Prerequisite: 2 researched colors
+        if (count($planet['researched_colors']) < 2) {
+            echo json_encode(['error' => 'Potřebuješ mít vyzkoumány alespoň 2 barvy!']);
+            exit;
+        }
+
+        $copperCost = 500;
+        if ($planet['res_copper'] >= $copperCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - ?, research_drone_upgrade_2 = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$copperCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek mědi (500 Cu)!']);
+        }
+    }
+
     if ($action === 'upgrade_copper_mine') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_copper']) {
@@ -273,7 +300,10 @@ try {
         $recallTime = new DateTime($planet['vehicle_recall_time']);
         
         $secondsOut = $recallTime->getTimestamp() - $startTime->getTimestamp();
-        $crystalsFound = floor($secondsOut * 0.1);
+        $sensorLvl = $planet['vehicle_sensor_lvl'] ?? 1;
+        $timeBonus = 1 + ($secondsOut * 0.0005);
+        $crystalRate = 0.1 * (1 + ($sensorLvl - 1) * 0.05) * $timeBonus;
+        $crystalsFound = floor($secondsOut * $crystalRate);
         
         $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, crystal_amount = crystal_amount + ?, vehicle_status = 'idle', vehicle_hp = 100, last_updated = ? WHERE user_id = ?");
         $stmt->execute([$planet['iron_amount'], $planet['energy_amount'], $crystalsFound, date('Y-m-d H:i:s'), $userId]);
@@ -298,6 +328,20 @@ try {
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['error' => 'Nedostatek železa!']);
+        }
+    }
+
+    if ($action === 'upgrade_vehicle_sensors') {
+        $planet = getPlanetData($userId, $db);
+        $cost = $planet['vehicle_sensor_lvl'] * 1000;
+        
+        if ($planet['iron_amount'] >= $cost) {
+            $newIron = $planet['iron_amount'] - $cost;
+            $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, vehicle_sensor_lvl = vehicle_sensor_lvl + 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$newIron, $planet['energy_amount'], date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => "Nedostatek železa ({$cost})!"]);
         }
     }
 
@@ -339,8 +383,9 @@ try {
         $recallTime = new DateTime($planet['vehicle2_recall_time']);
         $secondsOut = $recallTime->getTimestamp() - $startTime->getTimestamp();
         $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
+        $timeBonus = 1 + ($secondsOut * 0.0005);
         // Sensors are 2x more effective (10% bonus instead of 5%)
-        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10);
+        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10) * $timeBonus;
         $crystalsFound = floor($secondsOut * $crystalRate);
         $stmt = $db->prepare("UPDATE planets SET crystal_amount = crystal_amount + ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE user_id = ?");
         $stmt->execute([$crystalsFound, date('Y-m-d H:i:s'), $userId]);

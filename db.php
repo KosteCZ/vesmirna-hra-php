@@ -66,6 +66,7 @@ $columnsToAdd = [
     'warehouse_copper_lvl' => "INTEGER DEFAULT 0",
     'research_copper' => "INTEGER DEFAULT 0",
     'research_drone_upgrade' => "INTEGER DEFAULT 0",
+    'research_drone_upgrade_2' => "INTEGER DEFAULT 0",
     'vehicle2_level' => "INTEGER DEFAULT 0",
     'vehicle2_hp' => "REAL DEFAULT 100",
     'vehicle2_status' => "TEXT DEFAULT 'idle'",
@@ -191,7 +192,7 @@ function getPlanetData($userId, $db) {
             $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
             
             $baseDamageRate = 0.1; 
-            $acceleration = 0.006;
+            $acceleration = 0.003;
             $armorFactor = pow($vehicleLevel, 1.2);
             $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $armorFactor;
 
@@ -212,7 +213,8 @@ function getPlanetData($userId, $db) {
                     
                     if ($secondsReturning >= $secondsToReturn) {
                         $sensorLvl = $planet['vehicle_sensor_lvl'] ?? 1;
-                        $crystalRate = 0.1 * (1 + ($sensorLvl - 1) * 0.05);
+                        $timeBonus = 1 + ($secondsToReturn * 0.0005); // +5% bonus every 1000 seconds
+                        $crystalRate = 0.1 * (1 + ($sensorLvl - 1) * 0.05) * $timeBonus;
                         $crystalsFound = floor($secondsToReturn * $crystalRate);
                         $crystalAmount += $crystalsFound;
                         $vehicleStatus = 'idle';
@@ -234,7 +236,7 @@ function getPlanetData($userId, $db) {
             $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
             
             $baseDamageRate = 0.1; 
-            $acceleration = 0.006;
+            $acceleration = 0.003;
             // Armor is 2x more effective (level counts double for the bonus)
             $effectiveLevel = 1 + ($vehicle2Level - 1) * 2;
             $armorFactor = pow($effectiveLevel, 1.2);
@@ -257,8 +259,9 @@ function getPlanetData($userId, $db) {
                     
                     if ($secondsReturning >= $secondsToReturn) {
                         $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
+                        $timeBonus = 1 + ($secondsToReturn * 0.0005);
                         // Sensors are 2x more effective (10% bonus instead of 5%)
-                        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10);
+                        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10) * $timeBonus;
                         $crystalsFound = floor($secondsToReturn * $crystalRate);
                         $crystalAmount += $crystalsFound;
                         $vehicle2Status = 'idle';
@@ -272,10 +275,17 @@ function getPlanetData($userId, $db) {
         // --- Drone Logic ---
         $hasDrone = $planet['has_drone'] ?? 0;
         $droneStorage = $planet['drone_storage'] ?? 0;
-        $droneUpgrade = $planet['research_drone_upgrade'] ?? 0;
+        $droneUpgrade1 = $planet['research_drone_upgrade'] ?? 0;
+        $droneUpgrade2 = $planet['research_drone_upgrade_2'] ?? 0;
+
         if ($hasDrone) {
-            $droneProdPerSec = (1 / 300) * ($droneUpgrade ? 5 : 1); // 1 crystal / 300 seconds, 5x if upgraded
-            $droneLimit = $droneUpgrade ? 500 : 100;
+            $multiplier = 1;
+            if ($droneUpgrade2) $multiplier = 25;
+            elseif ($droneUpgrade1) $multiplier = 5;
+
+            $droneProdPerSec = (1 / 300) * $multiplier;
+            $droneLimit = 100 * $multiplier;
+            
             $droneStorage += ($secondsElapsed * $droneProdPerSec);
             $droneStorage = min($droneLimit, $droneStorage);
         }
@@ -314,6 +324,7 @@ function getPlanetData($userId, $db) {
             'warehouse_copper_lvl' => $planet['warehouse_copper_lvl'],
             'research_copper' => $planet['research_copper'],
             'research_drone_upgrade' => $planet['research_drone_upgrade'],
+            'research_drone_upgrade_2' => $planet['research_drone_upgrade_2'],
             'vehicle_level' => $vehicleLevel,
             'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
             'vehicle_hp' => $vehicleHP,
@@ -332,7 +343,7 @@ function getPlanetData($userId, $db) {
             'iron_storage_limit' => $ironLimit,
             'copper_production' => $copperProd,
             'copper_storage_limit' => $copperLimit,
-            'drone_storage_limit' => $droneUpgrade ? 500 : 100,
+            'drone_storage_limit' => $droneUpgrade2 ? 2500 : ($droneUpgrade1 ? 500 : 100),
             'researched_colors' => $researchedArr,
             'alien_resources' => $newResData,
             'has_drone' => $hasDrone,

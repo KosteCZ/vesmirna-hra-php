@@ -152,10 +152,14 @@ const game = {
                 this.displayAlien[color] += (prod / 10) * prodFactor;
             }
 
-            // Drone Production (1 crystal / 5 min = 1/300 per sec)
+            // Drone Production (1 crystal / 300 seconds base)
             if (this.planet.has_drone) {
-                const prod = (1 / 3000) * (this.planet.research_drone_upgrade ? 5 : 1); // 1/300 per sec, loop is 0.1s, 5x if upgraded
-                const limit = this.planet.drone_storage_limit || 100;
+                let multiplier = 1;
+                if (this.planet.research_drone_upgrade_2) multiplier = 25;
+                else if (this.planet.research_drone_upgrade) multiplier = 5;
+
+                const prod = (1 / 3000) * multiplier; // 1/300 per sec, loop is 0.1s
+                const limit = 100 * multiplier;
                 this.displayDrone = Math.min(limit, this.displayDrone + prod);
             }
 
@@ -166,7 +170,7 @@ const game = {
                 const secondsOut = (now - startTime) / 1000;
                 
                 const baseDamageRate = 0.1; 
-                const acceleration = 0.006;
+                const acceleration = 0.003;
                 const armorFactor = Math.pow(this.planet.vehicle_level || 1, 1.2);
                 const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
                 
@@ -175,7 +179,8 @@ const game = {
 
                 if (this.planet.vehicle_status === 'exploring') {
                     const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
-                    const crystalRate = 0.1 * (1 + (sensorLvl - 1) * 0.05);
+                    const timeBonus = 1 + (secondsOut * 0.0005);
+                    const crystalRate = 0.1 * (1 + (sensorLvl - 1) * 0.05) * timeBonus;
                     this.vehicleCrystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
                 } else {
@@ -201,7 +206,7 @@ const game = {
                 const secondsOut = (now - startTime) / 1000;
                 
                 const baseDamageRate = 0.1; 
-                const acceleration = 0.006;
+                const acceleration = 0.003;
                 // Armor is 2x more effective (level counts double for the bonus)
                 const effectiveLevel = 1 + ((this.planet.vehicle2_level || 1) - 1) * 2;
                 const armorFactor = Math.pow(effectiveLevel, 1.2);
@@ -212,8 +217,9 @@ const game = {
 
                 if (this.planet.vehicle2_status === 'exploring') {
                     const sensorLvl = this.planet.vehicle2_sensor_lvl || 1;
+                    const timeBonus = 1 + (secondsOut * 0.0005);
                     // Sensors are 2x more effective (10% bonus instead of 5%)
-                    const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.10);
+                    const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.10) * timeBonus;
                     this.vehicle2Crystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
                 } else {
@@ -323,14 +329,30 @@ const game = {
 
         // Drone Upgrade Research UI
         const droneResContainer = document.getElementById('drone-research-container');
-        if (this.planet.research_copper && !this.planet.research_drone_upgrade) {
-            droneResContainer.classList.remove('hidden');
-            const btn = document.getElementById('research-drone-btn');
-            if (btn) {
-                btn.disabled = this.displayCopper < 100;
+        const droneRes2Container = document.getElementById('drone-research-2-container');
+        
+        if (this.planet.research_copper) {
+            // Upgrade 1
+            if (!this.planet.research_drone_upgrade) {
+                droneResContainer.classList.remove('hidden');
+                const btn = document.getElementById('research-drone-btn');
+                if (btn) btn.disabled = this.displayCopper < 100;
+            } else {
+                droneResContainer.classList.add('hidden');
+            }
+
+            // Upgrade 2 (Requires 2 colors and Upgrade 1)
+            const researchedCount = (this.planet.researched_colors || []).length;
+            if (this.planet.research_drone_upgrade && !this.planet.research_drone_upgrade_2 && researchedCount >= 2) {
+                droneRes2Container.classList.remove('hidden');
+                const btn2 = document.getElementById('research-drone-2-btn');
+                if (btn2) btn2.disabled = this.displayCopper < 500;
+            } else {
+                droneRes2Container.classList.add('hidden');
             }
         } else {
             droneResContainer.classList.add('hidden');
+            droneRes2Container.classList.add('hidden');
         }
 
         // Update Alien Resource Values in UI
@@ -442,6 +464,13 @@ const game = {
 
     async researchDroneUpgrade() {
         const res = await fetch('api.php?action=research_drone_upgrade', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async researchDroneUpgrade2() {
+        const res = await fetch('api.php?action=research_drone_upgrade_2', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);
