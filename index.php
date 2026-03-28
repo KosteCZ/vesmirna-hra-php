@@ -191,6 +191,9 @@ session_start();
                     <button onclick="game.upgrade('warehouse')" id="upgrade-warehouse">
                         Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="warehouse-cost"></span>
                     </button>
+                    <button onclick="game.upgradeWarehouseCopperEff()" id="upgrade-warehouse-copper-eff" class="hidden" style="background: #b87333; margin-top: 5px; font-size: 0.8rem;">
+                        Efektivní vylepšení <svg width="14" height="14"><use href="#icon-upgrade"/></svg> (<span id="warehouse-copper-cost-eff"></span>)
+                    </button>
                 </div>
             </section>
 
@@ -426,6 +429,31 @@ session_start();
                     <p id="lab-research-desc" style="font-size: 0.9rem; color: #888;">Odemkne výrobu zkumavek pro pokročilý výzkum. Vyžaduje 2 barvy a dosažení součtu všech barevných materiálů v hodnotě 10 000.</p>
                     <button id="research-lab-btn" onclick="game.researchAdvancedLab()" style="background: #00d2ff; color: black; margin-top: 10px;">
                         Postavit laboratoř (5000 Mědi)
+                    </button>
+                </div>
+
+                <!-- Post-Lab Researches -->
+                <div id="research-wh-copper-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Metalurgické sklady</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Umožňuje vylepšovat Sklad železa pomocí Mědi (5x efektivnější). Vyžaduje Sklad železa Lvl 200.</p>
+                    <button id="research-wh-copper-btn" onclick="game.researchWarehouseCopper()" style="background: #00d2ff; color: black; margin-top: 10px;">
+                        Vyzkoumat (2500 Zkumavek)
+                    </button>
+                </div>
+
+                <div id="research-drone-3-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Kvantová robotika (Dron III)</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Zvyšuje efektivitu i limit dronů 4x (celkem 100x oproti základu).</p>
+                    <button id="research-drone-3-btn" onclick="game.researchDroneUpgrade3()" style="background: #00d2ff; color: black; margin-top: 10px;">
+                        Vyzkoumat (5000 Zkumavek)
+                    </button>
+                </div>
+
+                <div id="research-auto-recall-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Automatický návratový systém</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Vozidla se automaticky vrátí z expedice, pokud jejich zdraví klesne na 80 %.</p>
+                    <button id="research-auto-recall-btn" onclick="game.researchAutoRecall()" style="background: #00d2ff; color: black; margin-top: 10px;">
+                        Vyzkoumat (7500 Zkumavek)
                     </button>
                 </div>
             </section>

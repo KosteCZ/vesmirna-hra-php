@@ -166,7 +166,8 @@ const game = {
             // Drone Production (1 crystal / 300 seconds base)
             if (this.planet.has_drone) {
                 let multiplier = 1;
-                if (this.planet.research_drone_upgrade_2) multiplier = 25;
+                if (this.planet.research_drone_upgrade_3) multiplier = 100; // 25 * 4
+                else if (this.planet.research_drone_upgrade_2) multiplier = 25;
                 else if (this.planet.research_drone_upgrade) multiplier = 5;
 
                 const prod = (1 / 3000) * multiplier; // 1/300 per sec, loop is 0.1s
@@ -194,6 +195,11 @@ const game = {
                     const crystalRate = 0.1 * (1 + (sensorLvl - 1) * 0.05) * timeBonus;
                     this.vehicleCrystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
+
+                    // Auto-Recall
+                    if (this.planet.research_auto_recall && this.vehicleHP <= 80) {
+                        this.recallVehicle();
+                    }
                 } else {
                     const recallTime = new Date(this.planet.vehicle_recall_time + " UTC");
                     const secondsReturning = (now - recallTime) / 1000;
@@ -233,6 +239,11 @@ const game = {
                     const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.10) * timeBonus;
                     this.vehicle2Crystals = secondsOut * crystalRate;
                     displaySeconds = secondsOut;
+
+                    // Auto-Recall
+                    if (this.planet.research_auto_recall && this.vehicle2HP <= 80) {
+                        this.recallVehicle2();
+                    }
                 } else {
                     const recallTime = new Date(this.planet.vehicle2_recall_time + " UTC");
                     const secondsReturning = (now - recallTime) / 1000;
@@ -293,11 +304,29 @@ const game = {
 
         document.getElementById('mine-cost').innerText = `(${mineCost} Fe)`;
         document.getElementById('solar-cost').innerText = `(${solarCost} Fe)`;
-        document.getElementById('warehouse-cost').innerText = `(${warehouseCost} Fe)`;
+        
+        const upgradeWarehouseBtn = document.getElementById('upgrade-warehouse');
+        if (this.planet.warehouse_level >= 200) {
+            upgradeWarehouseBtn.classList.add('hidden');
+        } else {
+            upgradeWarehouseBtn.classList.remove('hidden');
+            document.getElementById('warehouse-cost').innerText = `(${warehouseCost} Fe)`;
+            upgradeWarehouseBtn.disabled = this.displayIron < warehouseCost;
+        }
         
         document.getElementById('upgrade-mine').disabled = this.displayIron < mineCost;
         document.getElementById('upgrade-solar').disabled = this.displayIron < solarCost;
-        document.getElementById('upgrade-warehouse').disabled = this.displayIron < warehouseCost;
+
+        // Copper-based Warehouse Efficiency
+        const warehouseCopperBtn = document.getElementById('upgrade-warehouse-copper-eff');
+        if (this.planet.research_warehouse_copper) {
+            warehouseCopperBtn.classList.remove('hidden');
+            const cost = (this.planet.warehouse_level + 1) * 10;
+            document.getElementById('warehouse-copper-cost-eff').innerText = `${cost} Cu`;
+            warehouseCopperBtn.disabled = this.displayCopper < cost;
+        } else {
+            warehouseCopperBtn.classList.add('hidden');
+        }
 
         // Copper UI
         if (this.planet.research_copper) {
@@ -373,7 +402,7 @@ const game = {
                     labDesc.innerText = `Vyžaduje 10 000 barevného materiálu (máš ${Math.floor(totalColored)}).`;
                     labDesc.style.color = '#ff4a4a';
                 } else {
-                    labDesc.innerText = 'Odemkne výrobu zkumavek pro pokročilý výzkum.';
+                    labDesc.innerText = 'Odemkne výrobu zkumavek pro pokročilý výzkum. Vyžaduje 2 barvy a dosažení součtu všech barevných materiálů v hodnotě 10 000.';
                     labDesc.style.color = '#888';
                 }
             } else {
@@ -408,11 +437,41 @@ const game = {
             labBuildings.classList.add('hidden');
         }
 
+        // --- Post-Lab Researches ---
+        if (this.planet && this.planet.research_advanced_lab) {
+            // 1. Warehouse Copper Research
+            const resWhCopper = document.getElementById('research-wh-copper-container');
+            if (!this.planet.research_warehouse_copper && this.planet.warehouse_level >= 200) {
+                resWhCopper.classList.remove('hidden');
+                document.getElementById('research-wh-copper-btn').disabled = this.displayTubes < 2500;
+            } else {
+                resWhCopper.classList.add('hidden');
+            }
+
+            // 2. Drone Upgrade III
+            const resDrone3 = document.getElementById('research-drone-3-container');
+            if (!this.planet.research_drone_upgrade_3 && this.planet.research_drone_upgrade_2) {
+                resDrone3.classList.remove('hidden');
+                document.getElementById('research-drone-3-btn').disabled = this.displayTubes < 5000;
+            } else {
+                resDrone3.classList.add('hidden');
+            }
+
+            // 3. Auto-Recall
+            const resAutoRecall = document.getElementById('research-auto-recall-container');
+            if (!this.planet.research_auto_recall) {
+                resAutoRecall.classList.remove('hidden');
+                document.getElementById('research-auto-recall-btn').disabled = this.displayTubes < 7500;
+            } else {
+                resAutoRecall.classList.add('hidden');
+            }
+        }
+
         // Drone Upgrade Research UI
         const droneResContainer = document.getElementById('drone-research-container');
         const droneRes2Container = document.getElementById('drone-research-2-container');
         
-        if (this.planet.research_copper) {
+        if (this.planet && this.planet.research_copper) {
             // Upgrade 1
             if (!this.planet.research_drone_upgrade) {
                 droneResContainer.classList.remove('hidden');
@@ -432,8 +491,8 @@ const game = {
                 droneRes2Container.classList.add('hidden');
             }
         } else {
-            droneResContainer.classList.add('hidden');
-            droneRes2Container.classList.add('hidden');
+            if (droneResContainer) droneResContainer.classList.add('hidden');
+            if (droneRes2Container) droneRes2Container.classList.add('hidden');
         }
 
         // Update Alien Resource Values in UI
@@ -451,10 +510,10 @@ const game = {
         }
 
         // Vehicle I UI (Iron)
-        if (this.planet.vehicle_level === 0 && this.planet.vehicle_status !== 'destroyed') {
+        if (this.planet && (this.planet.vehicle_level === 0 && this.planet.vehicle_status !== 'destroyed')) {
             document.getElementById('no-vehicle-view').classList.remove('hidden');
             document.getElementById('vehicle-view').classList.add('hidden');
-        } else {
+        } else if (this.planet) {
             document.getElementById('no-vehicle-view').classList.add('hidden');
             document.getElementById('vehicle-view').classList.remove('hidden');
             document.getElementById('vehicle-lvl').innerText = this.planet.vehicle_level;
@@ -486,7 +545,7 @@ const game = {
         }
 
         // Vehicle II UI (Copper)
-        if (this.planet.research_copper) {
+        if (this.planet && this.planet.research_copper) {
             document.getElementById('hangar2-section').classList.remove('hidden');
             if (this.planet.vehicle2_level === 0 && this.planet.vehicle2_status !== 'destroyed') {
                 document.getElementById('no-vehicle2-view').classList.remove('hidden');
@@ -521,12 +580,12 @@ const game = {
                     document.getElementById('recall2-btn').classList.toggle('hidden', this.planet.vehicle2_status === 'returning');
                 }
             }
-        } else {
+        } else if (this.planet) {
             document.getElementById('hangar2-section').classList.add('hidden');
         }
 
         // Drone UI
-        if (this.planet.has_drone) {
+        if (this.planet && this.planet.has_drone) {
             document.getElementById('no-drone-view').classList.add('hidden');
             document.getElementById('drone-view').classList.remove('hidden');
             const limit = this.planet.drone_storage_limit || 100;
@@ -538,7 +597,7 @@ const game = {
             const progress = (this.displayDrone / limit) * 100;
             document.getElementById('drone-progress-bar').style.width = `${Math.min(100, progress)}%`;
             document.getElementById('collect-drone-btn').disabled = this.displayDrone < 1;
-        } else {
+        } else if (this.planet) {
             document.getElementById('no-drone-view').classList.remove('hidden');
             document.getElementById('drone-view').classList.add('hidden');
         }
@@ -553,6 +612,34 @@ const game = {
 
     async researchDroneUpgrade2() {
         const res = await fetch('api.php?action=research_drone_upgrade_2', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async researchDroneUpgrade3() {
+        const res = await fetch('api.php?action=research_drone_upgrade_3', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async researchWarehouseCopper() {
+        const res = await fetch('api.php?action=research_warehouse_copper', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async researchAutoRecall() {
+        const res = await fetch('api.php?action=research_auto_recall', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) this.fetchPlanet();
+        else alert(data.error);
+    },
+
+    async upgradeWarehouseCopperEff() {
+        const res = await fetch('api.php?action=upgrade_warehouse_copper_eff', { method: 'POST' });
         const data = await res.json();
         if (data.success) this.fetchPlanet();
         else alert(data.error);

@@ -55,6 +55,10 @@ try {
                 $params[] = $newLevel;
             }
             if ($type === 'warehouse') {
+                if ($currentLevel >= 200) {
+                    echo json_encode(['error' => 'Sklad nelze dále vylepšovat za železo (max Lvl 200)!']);
+                    exit;
+                }
                 $sql .= ", warehouse_level = ? ";
                 $params[] = $newLevel;
             }
@@ -211,6 +215,152 @@ try {
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['error' => 'Nedostatek mědi (5000 Cu)!']);
+        }
+    }
+
+    if ($action === 'research_warehouse_copper') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
+            exit;
+        }
+        if ($planet['warehouse_level'] < 200) {
+            echo json_encode(['error' => 'Sklad železa musí být na úrovni 200!']);
+            exit;
+        }
+        
+        $tubeCost = 2500;
+        if ($planet['res_tubes'] >= $tubeCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_warehouse_copper = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$tubeCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (2500)!']);
+        }
+    }
+
+    if ($action === 'research_drone_upgrade_3') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
+            exit;
+        }
+        
+        $tubeCost = 5000;
+        if ($planet['res_tubes'] >= $tubeCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_drone_upgrade_3 = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$tubeCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (5000)!']);
+        }
+    }
+
+    if ($action === 'research_auto_recall') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
+            exit;
+        }
+        
+        $tubeCost = 7500;
+        if ($planet['res_tubes'] >= $tubeCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_auto_recall = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$tubeCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (7500)!']);
+        }
+    }
+
+    if ($action === 'upgrade_warehouse_copper_eff') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_warehouse_copper']) {
+            echo json_encode(['error' => 'Výzkum není dokončen!']);
+            exit;
+        }
+        
+        $cost = ($planet['warehouse_level'] + 1) * 10; // Copper cost
+        if ($planet['res_copper'] >= $cost) {
+            // Efficiency: +5 levels per upgrade
+            $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - ?, warehouse_level = warehouse_level + 5, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$cost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
+        }
+    }
+
+    if ($action === 'research_warehouse_copper') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
+            exit;
+        }
+        if ($planet['warehouse_level'] < 200) {
+            echo json_encode(['error' => 'Sklad železa musí být na úrovni 200!']);
+            exit;
+        }
+        
+        $tubeCost = 2500;
+        if ($planet['res_tubes'] >= $tubeCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_warehouse_copper = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$tubeCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (2500)!']);
+        }
+    }
+
+    if ($action === 'research_drone_upgrade_3') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
+            exit;
+        }
+        
+        $tubeCost = 5000;
+        if ($planet['res_tubes'] >= $tubeCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_drone_upgrade_3 = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$tubeCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (5000)!']);
+        }
+    }
+
+    if ($action === 'research_auto_recall') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
+            exit;
+        }
+        
+        $tubeCost = 7500;
+        if ($planet['res_tubes'] >= $tubeCost) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_auto_recall = 1, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$tubeCost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (7500)!']);
+        }
+    }
+
+    if ($action === 'upgrade_warehouse_copper_eff') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_warehouse_copper']) {
+            echo json_encode(['error' => 'Výzkum není dokončen!']);
+            exit;
+        }
+        
+        $cost = ($planet['warehouse_level'] + 1) * 10; // Copper cost
+        if ($planet['res_copper'] >= $cost) {
+            // Efficiency: +5 levels per upgrade
+            $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - ?, warehouse_level = warehouse_level + 5, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([$cost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
         }
     }
 

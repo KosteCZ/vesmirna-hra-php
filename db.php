@@ -76,7 +76,10 @@ $columnsToAdd = [
     'res_tubes' => "REAL DEFAULT 0",
     'lab_level' => "INTEGER DEFAULT 0",
     'lab_storage_level' => "INTEGER DEFAULT 0",
-    'research_advanced_lab' => "INTEGER DEFAULT 0"
+    'research_advanced_lab' => "INTEGER DEFAULT 0",
+    'research_warehouse_copper' => "INTEGER DEFAULT 0",
+    'research_drone_upgrade_3' => "INTEGER DEFAULT 0",
+    'research_auto_recall' => "INTEGER DEFAULT 0"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -291,10 +294,12 @@ function getPlanetData($userId, $db) {
         $droneStorage = $planet['drone_storage'] ?? 0;
         $droneUpgrade1 = $planet['research_drone_upgrade'] ?? 0;
         $droneUpgrade2 = $planet['research_drone_upgrade_2'] ?? 0;
+        $droneUpgrade3 = $planet['research_drone_upgrade_3'] ?? 0;
 
         if ($hasDrone) {
             $multiplier = 1;
-            if ($droneUpgrade2) $multiplier = 25;
+            if ($droneUpgrade3) $multiplier = 100; // 25 * 4
+            elseif ($droneUpgrade2) $multiplier = 25;
             elseif ($droneUpgrade1) $multiplier = 5;
 
             $droneProdPerSec = (1 / 300) * $multiplier;
@@ -302,6 +307,19 @@ function getPlanetData($userId, $db) {
             
             $droneStorage += ($secondsElapsed * $droneProdPerSec);
             $droneStorage = min($droneLimit, $droneStorage);
+        }
+
+        // --- Auto-Recall Logic (Offline) ---
+        $autoRecall = $planet['research_auto_recall'] ?? 0;
+        if ($autoRecall) {
+            if ($vehicleStatus === 'exploring' && $vehicleHP <= 80) {
+                $vehicleStatus = 'returning';
+                $db->prepare("UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
+            }
+            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 80) {
+                $vehicle2Status = 'returning';
+                $db->prepare("UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
+            }
         }
 
         // --- PERSISTENCE: Save calculated resources back to DB ---
@@ -341,6 +359,9 @@ function getPlanetData($userId, $db) {
             'research_copper' => $planet['research_copper'],
             'research_drone_upgrade' => $planet['research_drone_upgrade'],
             'research_drone_upgrade_2' => $planet['research_drone_upgrade_2'],
+            'research_drone_upgrade_3' => $planet['research_drone_upgrade_3'] ?? 0,
+            'research_warehouse_copper' => $planet['research_warehouse_copper'] ?? 0,
+            'research_auto_recall' => $planet['research_auto_recall'] ?? 0,
             'research_advanced_lab' => $planet['research_advanced_lab'] ?? 0,
             'lab_level' => $labLvl,
             'lab_storage_level' => $labStorageLvl,
@@ -365,7 +386,7 @@ function getPlanetData($userId, $db) {
             'iron_storage_limit' => $ironLimit,
             'copper_production' => $copperProd,
             'copper_storage_limit' => $copperLimit,
-            'drone_storage_limit' => $droneUpgrade2 ? 2500 : ($droneUpgrade1 ? 500 : 100),
+            'drone_storage_limit' => $droneUpgrade3 ? 10000 : ($droneUpgrade2 ? 2500 : ($droneUpgrade1 ? 500 : 100)),
             'researched_colors' => $researchedArr,
             'alien_resources' => $newResData,
             'has_drone' => $hasDrone,
