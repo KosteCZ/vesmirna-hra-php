@@ -484,6 +484,10 @@ session_start();
         </div>
     </main>
 
+    <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
+        v2026.03.28.2325
+    </footer>
+
     <script src="script.js"></script>
 </body>
 </html>
