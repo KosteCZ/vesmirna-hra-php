@@ -197,7 +197,7 @@ const game = {
                     displaySeconds = secondsOut;
 
                     // Auto-Recall
-                    if (this.planet.research_auto_recall && this.vehicleHP <= 80) {
+                    if (this.planet.research_auto_recall && this.vehicleHP <= 87) {
                         this.recallVehicle();
                     }
                 } else {

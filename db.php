@@ -312,11 +312,11 @@ function getPlanetData($userId, $db) {
         // --- Auto-Recall Logic (Offline) ---
         $autoRecall = $planet['research_auto_recall'] ?? 0;
         if ($autoRecall) {
-            if ($vehicleStatus === 'exploring' && $vehicleHP <= 80) {
+            if ($vehicleStatus === 'exploring' && $vehicleHP <= 87) {
                 $vehicleStatus = 'returning';
                 $db->prepare("UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
-            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 80) {
+            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 87) {
                 $vehicle2Status = 'returning';
                 $db->prepare("UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
