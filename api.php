@@ -1,5 +1,7 @@
 <?php
 // api.php - Game logic API
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start();
 require_once 'db.php';
 
