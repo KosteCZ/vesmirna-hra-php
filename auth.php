@@ -57,6 +57,11 @@ if ($action === 'login') {
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['player_name'] = $user['player_name'];
+        
+        // Update last login
+        $stmt = $db->prepare("UPDATE users SET last_login = ? WHERE id = ?");
+        $stmt->execute([date('Y-m-d H:i:s'), $user['id']]);
+        
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['error' => 'Neplatný e-mail nebo heslo!']);

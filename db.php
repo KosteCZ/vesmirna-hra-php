@@ -38,6 +38,17 @@ $db->exec("CREATE TABLE IF NOT EXISTS planets (
 )");
 
 // Migration: Ensure new columns exist
+$resUsers = $db->query("PRAGMA table_info(users)");
+$existingUserColumns = [];
+if ($resUsers) {
+    while ($row = $resUsers->fetch(PDO::FETCH_ASSOC)) {
+        $existingUserColumns[] = $row['name'];
+    }
+}
+if (!in_array('last_login', $existingUserColumns)) {
+    $db->exec("ALTER TABLE users ADD COLUMN last_login DATETIME");
+}
+
 $columnsToAdd = [
     'crystal_amount' => "REAL DEFAULT 0",
     'vehicle_level' => "INTEGER DEFAULT 0",
@@ -116,6 +127,23 @@ foreach ($columnsToAdd as $col => $definition) {
     }
 }
 
+function isReadonlyDatabaseError(Throwable $e): bool {
+    return $e instanceof PDOException && stripos($e->getMessage(), 'readonly database') !== false;
+}
+
+function safePlanetWrite(PDO $db, string $sql, array $params): bool {
+    try {
+        $stmt = $db->prepare($sql);
+        return $stmt->execute($params);
+    } catch (Throwable $e) {
+        if (isReadonlyDatabaseError($e)) {
+            return false;
+        }
+
+        throw $e;
+    }
+}
+
 /**
  * Get current planet data for a user
  */
@@ -158,17 +186,30 @@ function getPlanetData($userId, $db) {
         $copperLimit = ($planet['warehouse_copper_lvl'] ?? 0) * 1000 + 500;
         $totalExtraEnergyNeeded += ($copperLvl * 0.5);
 
+        // --- Advanced Lab: Test Tubes Production ---
+        $labLvl = $planet['lab_level'] ?? 0;
+        $labStorageLvl = $planet['lab_storage_level'] ?? 0;
+        $tubeProd = $labLvl * 0.05; // Base production rate
+        $tubeLimit = ($labStorageLvl > 0) ? ($labStorageLvl * 500) : 100;
+        $currentTubes = $planet['res_tubes'] ?? 0;
+        
+        if (($planet['research_advanced_lab'] ?? 0)) {
+            $totalExtraEnergyNeeded += ($labLvl * 1.5);
+        }
+
         $energyNeeded = ($ironProd * 0.5) + $totalExtraEnergyNeeded;
         $currentIron = $planet['iron_amount'] ?? 0;
         $currentEnergy = $planet['energy_amount'] ?? 0;
         $currentCopper = $planet['res_copper'] ?? 0;
+        $currentTubes = $planet['res_tubes'] ?? 0;
         
         $productionFactor = 1.0;
         if ($energyProd < $energyNeeded) {
             $energyDiff = $energyNeeded - $energyProd;
             $secondsWithEnergy = ($energyDiff > 0) ? min($secondsElapsed, $currentEnergy / $energyDiff) : $secondsElapsed;
-            $productionFactor = ($secondsWithEnergy + (($secondsElapsed - $secondsWithEnergy) * 0.1)) / $secondsElapsed;
-            if ($secondsElapsed == 0) $productionFactor = 1.0;
+            if ($secondsElapsed > 0) {
+                $productionFactor = ($secondsWithEnergy + (($secondsElapsed - $secondsWithEnergy) * 0.1)) / $secondsElapsed;
+            }
             
             $newEnergy = $currentEnergy - ($secondsWithEnergy * $energyDiff) + (max(0, $secondsElapsed - $secondsWithEnergy) * $energyProd);
         } else {
@@ -178,16 +219,7 @@ function getPlanetData($userId, $db) {
         $newIron = min($ironLimit, $currentIron + ($secondsElapsed * $ironProd * $productionFactor));
         $newEnergy = max(0, $newEnergy);
         $newCopper = min($copperLimit, $currentCopper + ($secondsElapsed * $copperProd * $productionFactor));
-
-        // --- Advanced Lab: Test Tubes Production ---
-        $labLvl = $planet['lab_level'] ?? 0;
-        $labStorageLvl = $planet['lab_storage_level'] ?? 0;
-        $tubeProd = $labLvl * 0.05; // Base production rate
-        $tubeLimit = ($labStorageLvl > 0) ? ($labStorageLvl * 500) : 100;
-        $currentTubes = $planet['res_tubes'] ?? 0;
         $newTubes = min($tubeLimit, $currentTubes + ($secondsElapsed * $tubeProd * $productionFactor));
-        
-        $totalExtraEnergyNeeded += ($labLvl * 1.5); // Lab consumes more energy
 
         // Update alien resources based on production factor
         $researchedStr = $planet['researched_colors'] ?? '';
@@ -219,7 +251,7 @@ function getPlanetData($userId, $db) {
                 $vehicleStatus = 'destroyed';
                 $vehicleHP = 0;
                 $vehicleLevel = 0;
-                $db->prepare("UPDATE planets SET vehicle_status = 'destroyed', vehicle_level = 0, vehicle_hp = 0, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), $planet['id']]);
+                safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'destroyed', vehicle_level = 0, vehicle_hp = 0, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
             } else {
                 $vehicleHP = $currentHP;
                 if ($vehicleStatus === 'returning') {
@@ -236,7 +268,7 @@ function getPlanetData($userId, $db) {
                         $crystalAmount += $crystalsFound;
                         $vehicleStatus = 'idle';
                         $vehicleHP = 100;
-                        $db->prepare("UPDATE planets SET crystal_amount = ?, vehicle_status = 'idle', vehicle_hp = 100, last_updated = ? WHERE id = ?")->execute([$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
+                        safePlanetWrite($db, "UPDATE planets SET crystal_amount = ?, vehicle_status = 'idle', vehicle_hp = 100, last_updated = ? WHERE id = ?", [$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
                     }
                 }
             }
@@ -265,7 +297,7 @@ function getPlanetData($userId, $db) {
                 $vehicle2Status = 'destroyed';
                 $vehicle2HP = 0;
                 $vehicle2Level = 0;
-                $db->prepare("UPDATE planets SET vehicle2_status = 'destroyed', vehicle2_level = 0, vehicle2_hp = 0, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), $planet['id']]);
+                safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'destroyed', vehicle2_level = 0, vehicle2_hp = 0, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
             } else {
                 $vehicle2HP = $currentHP;
                 if ($vehicle2Status === 'returning') {
@@ -283,7 +315,7 @@ function getPlanetData($userId, $db) {
                         $crystalAmount += $crystalsFound;
                         $vehicle2Status = 'idle';
                         $vehicle2HP = 100;
-                        $db->prepare("UPDATE planets SET crystal_amount = ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE id = ?")->execute([$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
+                        safePlanetWrite($db, "UPDATE planets SET crystal_amount = ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE id = ?", [$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
                     }
                 }
             }
@@ -314,11 +346,11 @@ function getPlanetData($userId, $db) {
         if ($autoRecall) {
             if ($vehicleStatus === 'exploring' && $vehicleHP <= 87) {
                 $vehicleStatus = 'returning';
-                $db->prepare("UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
+                safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
-            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 87) {
+            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 80) {
                 $vehicle2Status = 'returning';
-                $db->prepare("UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
+                safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
         }
 
@@ -333,7 +365,7 @@ function getPlanetData($userId, $db) {
             last_updated = ? 
             WHERE id = ?";
         
-        $db->prepare($updateSql)->execute([
+        safePlanetWrite($db, $updateSql, [
             $newIron, $newEnergy, $crystalAmount,
             $newResData['yellow']['amount'], $newResData['red']['amount'], $newResData['blue']['amount'],
             $newResData['green']['amount'], $newResData['orange']['amount'], $newResData['purple']['amount'],

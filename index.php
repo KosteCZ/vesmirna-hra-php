@@ -463,7 +463,7 @@ session_start();
                 <h3>🏆 Top Průzkumníci</h3>
                 <table>
                     <thead>
-                        <tr><th>Pozice</th><th>Velitel</th><th>Důl na železo</th><th>Sklad Fe</th></tr>
+                        <tr><th>Pozice</th><th>Velitel</th><th>Důl na železo</th><th>Přihlášen</th></tr>
                     </thead>
                     <tbody id="leaderboard-body">
                         <!-- Filled by JS -->
@@ -485,7 +485,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.03.28.2350
+        v2026.04.07.0832
     </footer>
 
     <script src="script.js"></script>

@@ -55,6 +55,31 @@ const game = {
         document.getElementById('dashboard-section').classList.remove('hidden');
         this.fetchPlanet();
         this.fetchLeaderboard();
+        this.fetchGlobalStats();
+    },
+
+    async refreshDashboard() {
+        await this.fetchPlanet();
+        await Promise.all([
+            this.fetchLeaderboard(),
+            this.fetchGlobalStats()
+        ]);
+    },
+
+    async submitAction(url, body = null) {
+        const res = await fetch(url, {
+            method: 'POST',
+            body
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+            alert(data.error || 'Akci se nepodarilo dokoncit.');
+            return null;
+        }
+
+        await this.refreshDashboard();
+        return data;
     },
 
     async fetchPlanet() {
@@ -104,7 +129,7 @@ const game = {
                 <td>${i + 1}.</td>
                 <td>${p.player_name}${iconsHtml}</td>
                 <td>Lvl ${p.mine_level}</td>
-                <td>${Math.floor(p.iron_amount)}</td>
+                <td>${p.last_login || '---'}</td>
             `;
             body.appendChild(tr);
         });
@@ -604,217 +629,129 @@ const game = {
     },
 
     async researchDroneUpgrade() {
-        const res = await fetch('api.php?action=research_drone_upgrade', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_drone_upgrade');
     },
 
     async researchDroneUpgrade2() {
-        const res = await fetch('api.php?action=research_drone_upgrade_2', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_drone_upgrade_2');
     },
 
     async researchDroneUpgrade3() {
-        const res = await fetch('api.php?action=research_drone_upgrade_3', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_drone_upgrade_3');
     },
 
     async researchWarehouseCopper() {
-        const res = await fetch('api.php?action=research_warehouse_copper', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_warehouse_copper');
     },
 
     async researchAutoRecall() {
-        const res = await fetch('api.php?action=research_auto_recall', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_auto_recall');
     },
 
     async upgradeWarehouseCopperEff() {
-        const res = await fetch('api.php?action=upgrade_warehouse_copper_eff', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_warehouse_copper_eff');
     },
 
     async upgrade(type) {
         const formData = new FormData();
         formData.append('type', type);
-        
-        const res = await fetch('api.php?action=upgrade', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            this.fetchPlanet();
-            this.fetchLeaderboard();
-        } else {
-            alert(data.error);
-        }
+
+        await this.submitAction('api.php?action=upgrade', formData);
     },
 
     async buyVehicle() {
         if (this.displayIron < 500) return alert("Nedostatek železa!");
-        const res = await fetch('api.php?action=buy_vehicle', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=buy_vehicle');
     },
 
     async buyVehicle2() {
         if (this.displayCopper < 500) return alert("Nedostatek mědi (500 Cu)!");
-        const res = await fetch('api.php?action=buy_vehicle2', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=buy_vehicle2');
     },
 
     async startExpedition() {
-        const res = await fetch('api.php?action=start_expedition', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=start_expedition');
     },
 
     async startExpedition2() {
-        const res = await fetch('api.php?action=start_expedition2', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=start_expedition2');
     },
 
     async recallVehicle() {
-        const res = await fetch('api.php?action=recall_vehicle', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=recall_vehicle');
     },
 
     async recallVehicle2() {
-        const res = await fetch('api.php?action=recall_vehicle2', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=recall_vehicle2');
     },
 
     async finishExpedition() {
         if (this.interval) clearInterval(this.interval);
-        const res = await fetch('api.php?action=finish_expedition', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=finish_expedition');
     },
 
     async finishExpedition2() {
         if (this.interval) clearInterval(this.interval);
-        const res = await fetch('api.php?action=finish_expedition2', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=finish_expedition2');
     },
 
     async destroyVehicle() {
         if (this.interval) clearInterval(this.interval);
-        const res = await fetch('api.php?action=destroy_vehicle', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=destroy_vehicle');
     },
 
     async destroyVehicle2() {
         if (this.interval) clearInterval(this.interval);
-        const res = await fetch('api.php?action=destroy_vehicle2', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
+        await this.submitAction('api.php?action=destroy_vehicle2');
     },
 
     async upgradeVehicle() {
-        const res = await fetch('api.php?action=upgrade_vehicle', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_vehicle');
     },
 
     async upgradeVehicleSensors() {
-        const res = await fetch('api.php?action=upgrade_vehicle_sensors', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_vehicle_sensors');
     },
 
     async upgradeVehicle2Armor() {
-        const res = await fetch('api.php?action=upgrade_vehicle2_armor', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_vehicle2_armor');
     },
 
     async upgradeVehicle2Sensors() {
-        const res = await fetch('api.php?action=upgrade_vehicle2_sensors', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_vehicle2_sensors');
     },
 
     async researchCopper() {
-        const res = await fetch('api.php?action=research_copper', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_copper');
     },
 
     async upgradeCopperMine() {
-        const res = await fetch('api.php?action=upgrade_copper_mine', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_copper_mine');
     },
 
     async upgradeCopperWarehouse() {
-        const res = await fetch('api.php?action=upgrade_copper_warehouse', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_copper_warehouse');
     },
 
     async researchAdvancedLab() {
-        const res = await fetch('api.php?action=research_advanced_lab', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_advanced_lab');
     },
 
     async upgradeLab() {
-        const res = await fetch('api.php?action=upgrade_lab', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_lab');
     },
 
     async upgradeLabStorage() {
-        const res = await fetch('api.php?action=upgrade_lab_storage', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_lab_storage');
     },
 
     async buyDrone() {
         if (this.displayCrystal < 250) return alert("Nedostatek krystalů!");
-        const res = await fetch('api.php?action=buy_drone', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=buy_drone');
     },
 
     async collectDrone() {
-        const res = await fetch('api.php?action=collect_drone', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=collect_drone');
     },
 
     // --- Alien Content Methods ---
@@ -860,10 +797,7 @@ const game = {
     async researchColor(color) {
         const formData = new FormData();
         formData.append('color', color);
-        const res = await fetch('api.php?action=research_color', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=research_color', formData);
     },
 
     updateAlienUI() {
@@ -922,10 +856,7 @@ const game = {
     async upgradeAlienMine(color) {
         const formData = new FormData();
         formData.append('color', color);
-        const res = await fetch('api.php?action=upgrade_alien_mine', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) this.fetchPlanet();
-        else alert(data.error);
+        await this.submitAction('api.php?action=upgrade_alien_mine', formData);
     },
 
     getColorCode(color) {

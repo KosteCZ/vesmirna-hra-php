@@ -1,13 +1,15 @@
 <?php
 // api.php - Game logic API
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 session_start();
 require_once 'db.php';
 
 header('Content-Type: application/json');
 
 const UPGRADE_COST_MULTIPLIER = 100;
+const ALLOWED_COLORS = ['yellow', 'red', 'blue', 'green', 'orange', 'purple'];
+const ALLOWED_UPGRADE_TYPES = ['mine', 'solar', 'warehouse'];
 
 try {
     if (!isset($_SESSION['user_id'])) {
@@ -27,6 +29,11 @@ try {
 
     if ($action === 'upgrade') {
         $type = $_POST['type'] ?? '';
+        if (!in_array($type, ALLOWED_UPGRADE_TYPES, true)) {
+            echo json_encode(['error' => 'Neplatny typ vylepseni!']);
+            exit;
+        }
+
         $planet = getPlanetData($userId, $db);
         
         if (!$planet) {
@@ -78,6 +85,11 @@ try {
 
     if ($action === 'research_color') {
         $color = $_POST['color'] ?? '';
+        if (!in_array($color, ALLOWED_COLORS, true)) {
+            echo json_encode(['error' => 'Neplatna barva!']);
+            exit;
+        }
+
         $planet = getPlanetData($userId, $db);
         $researched = $planet['researched_colors'] ?? [];
         
@@ -220,7 +232,7 @@ try {
         }
     }
 
-    if ($action === 'research_warehouse_copper') {
+    if ($action === '__deprecated_duplicate_research_warehouse_copper__') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
             echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
@@ -239,9 +251,10 @@ try {
         } else {
             echo json_encode(['error' => 'Nedostatek zkumavek (2500)!']);
         }
+        exit;
     }
 
-    if ($action === 'research_drone_upgrade_3') {
+    if ($action === '__deprecated_duplicate_research_drone_upgrade_3__') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
             echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
@@ -256,9 +269,10 @@ try {
         } else {
             echo json_encode(['error' => 'Nedostatek zkumavek (5000)!']);
         }
+        exit;
     }
 
-    if ($action === 'research_auto_recall') {
+    if ($action === '__deprecated_duplicate_research_auto_recall__') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
             echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
@@ -273,9 +287,10 @@ try {
         } else {
             echo json_encode(['error' => 'Nedostatek zkumavek (7500)!']);
         }
+        exit;
     }
 
-    if ($action === 'upgrade_warehouse_copper_eff') {
+    if ($action === '__deprecated_duplicate_upgrade_warehouse_copper_eff__') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_warehouse_copper']) {
             echo json_encode(['error' => 'Výzkum není dokončen!']);
@@ -448,6 +463,11 @@ try {
 
     if ($action === 'upgrade_alien_mine') {
         $color = $_POST['color'] ?? '';
+        if (!in_array($color, ALLOWED_COLORS, true)) {
+            echo json_encode(['error' => 'Neplatna barva!']);
+            exit;
+        }
+
         $planet = getPlanetData($userId, $db);
         $researched = $planet['researched_colors'] ?? [];
         
@@ -476,7 +496,7 @@ try {
     }
 
     if ($action === 'leaderboard') {
-        $stmt = $db->query("SELECT p.mine_level, p.iron_amount, p.researched_colors, u.player_name FROM planets p JOIN users u ON p.user_id = u.id ORDER BY p.mine_level DESC LIMIT 10");
+        $stmt = $db->query("SELECT p.mine_level, p.iron_amount, p.researched_colors, u.player_name, u.last_login FROM planets p JOIN users u ON p.user_id = u.id ORDER BY p.mine_level DESC LIMIT 10");
         $leaderboard = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode($leaderboard);
     }
@@ -492,6 +512,11 @@ try {
 
     if ($action === 'buy_vehicle') {
         $planet = getPlanetData($userId, $db);
+        if ($planet['vehicle_level'] > 0 && $planet['vehicle_status'] !== 'destroyed') {
+            echo json_encode(['error' => 'Vozidlo uz mas!']);
+            exit;
+        }
+
         if ($planet['iron_amount'] >= 500) {
             $newIron = $planet['iron_amount'] - 500;
             $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, vehicle_level = 1, vehicle_hp = 100, vehicle_status = 'idle', last_updated = ? WHERE user_id = ?");
@@ -504,6 +529,15 @@ try {
 
     if ($action === 'start_expedition') {
         $planet = getPlanetData($userId, $db);
+        if (($planet['vehicle_level'] ?? 0) <= 0) {
+            echo json_encode(['error' => 'Nejdriv musis koupit vozidlo!']);
+            exit;
+        }
+        if (($planet['vehicle_status'] ?? 'idle') !== 'idle') {
+            echo json_encode(['error' => 'Vozidlo uz je na misi nebo mimo provoz!']);
+            exit;
+        }
+
         $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, vehicle_status = 'exploring', vehicle_start_time = ?, last_updated = ? WHERE user_id = ?");
         $now = date('Y-m-d H:i:s');
         $stmt->execute([$planet['iron_amount'], $planet['energy_amount'], $now, $now, $userId]);
@@ -512,6 +546,11 @@ try {
 
     if ($action === 'recall_vehicle') {
         $planet = getPlanetData($userId, $db);
+        if (($planet['vehicle_status'] ?? '') !== 'exploring') {
+            echo json_encode(['error' => 'Vozidlo zrovna neni na pruzkumu!']);
+            exit;
+        }
+
         $stmt = $db->prepare("UPDATE planets SET iron_amount = ?, energy_amount = ?, vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE user_id = ?");
         $now = date('Y-m-d H:i:s');
         $stmt->execute([$planet['iron_amount'], $planet['energy_amount'], $now, $now, $userId]);
@@ -520,7 +559,11 @@ try {
 
     if ($action === 'finish_expedition') {
         $planet = getPlanetData($userId, $db);
-        $now = new DateTime();
+        if (($planet['vehicle_status'] ?? '') !== 'returning' || empty($planet['vehicle_start_time']) || empty($planet['vehicle_recall_time'])) {
+            echo json_encode(['error' => 'Expedici nelze dokoncit v aktualnim stavu!']);
+            exit;
+        }
+
         $startTime = new DateTime($planet['vehicle_start_time']);
         $recallTime = new DateTime($planet['vehicle_recall_time']);
         
@@ -576,6 +619,10 @@ try {
             echo json_encode(['error' => 'Měď není vyzkoumána!']);
             exit;
         }
+        if ($planet['vehicle2_level'] > 0 && $planet['vehicle2_status'] !== 'destroyed') {
+            echo json_encode(['error' => 'Druhe vozidlo uz mas!']);
+            exit;
+        }
         if ($planet['res_copper'] >= 500) {
             $stmt = $db->prepare("UPDATE planets SET res_copper = res_copper - 500, vehicle2_level = 1, vehicle2_hp = 100, vehicle2_status = 'idle', last_updated = ? WHERE user_id = ?");
             $stmt->execute([date('Y-m-d H:i:s'), $userId]);
@@ -587,6 +634,14 @@ try {
 
     if ($action === 'start_expedition2') {
         $planet = getPlanetData($userId, $db);
+        if (($planet['vehicle2_level'] ?? 0) <= 0) {
+            echo json_encode(['error' => 'Nejdriv musis koupit druhe vozidlo!']);
+            exit;
+        }
+        if (($planet['vehicle2_status'] ?? 'idle') !== 'idle') {
+            echo json_encode(['error' => 'Druhe vozidlo uz je na misi nebo mimo provoz!']);
+            exit;
+        }
         $stmt = $db->prepare("UPDATE planets SET vehicle2_status = 'exploring', vehicle2_start_time = ?, last_updated = ? WHERE user_id = ?");
         $now = date('Y-m-d H:i:s');
         $stmt->execute([$now, $now, $userId]);
@@ -595,6 +650,10 @@ try {
 
     if ($action === 'recall_vehicle2') {
         $planet = getPlanetData($userId, $db);
+        if (($planet['vehicle2_status'] ?? '') !== 'exploring') {
+            echo json_encode(['error' => 'Druhe vozidlo zrovna neni na pruzkumu!']);
+            exit;
+        }
         $stmt = $db->prepare("UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE user_id = ?");
         $now = date('Y-m-d H:i:s');
         $stmt->execute([$now, $now, $userId]);
@@ -603,7 +662,10 @@ try {
 
     if ($action === 'finish_expedition2') {
         $planet = getPlanetData($userId, $db);
-        $now = new DateTime();
+        if (($planet['vehicle2_status'] ?? '') !== 'returning' || empty($planet['vehicle2_start_time']) || empty($planet['vehicle2_recall_time'])) {
+            echo json_encode(['error' => 'Expedici druheho vozidla nelze dokoncit v aktualnim stavu!']);
+            exit;
+        }
         $startTime = new DateTime($planet['vehicle2_start_time']);
         $recallTime = new DateTime($planet['vehicle2_recall_time']);
         $secondsOut = $recallTime->getTimestamp() - $startTime->getTimestamp();
