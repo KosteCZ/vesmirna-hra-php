@@ -47,6 +47,9 @@ const game = {
     vehicle2HP: 100,
     vehicle2Crystals: 0,
     interval: null,
+    refreshPromise: null,
+    recallPending: false,
+    recallVehicle2Pending: false,
 
     showDashboard(user) {
         document.getElementById('auth-section').classList.add('hidden');
@@ -59,11 +62,23 @@ const game = {
     },
 
     async refreshDashboard() {
-        await this.fetchPlanet();
-        await Promise.all([
-            this.fetchLeaderboard(),
-            this.fetchGlobalStats()
-        ]);
+        if (this.refreshPromise) {
+            return this.refreshPromise;
+        }
+
+        this.refreshPromise = (async () => {
+            await this.fetchPlanet();
+            await Promise.all([
+                this.fetchLeaderboard(),
+                this.fetchGlobalStats()
+            ]);
+        })();
+
+        try {
+            await this.refreshPromise;
+        } finally {
+            this.refreshPromise = null;
+        }
     },
 
     async submitAction(url, body = null) {
@@ -94,6 +109,8 @@ const game = {
             this.displayDrone = this.planet.drone_storage || 0;
             this.vehicleHP = this.planet.vehicle_hp || 100;
             this.vehicle2HP = this.planet.vehicle2_hp || 100;
+            this.recallPending = false;
+            this.recallVehicle2Pending = false;
             
             // Sync alien resources
             this.displayAlien = {};
@@ -205,13 +222,11 @@ const game = {
                 const now = new Date();
                 const startTime = new Date(this.planet.vehicle_start_time + " UTC");
                 const secondsOut = (now - startTime) / 1000;
+                let damageSeconds = secondsOut;
                 
                 const baseDamageRate = 0.1; 
                 const acceleration = 0.003;
                 const armorFactor = Math.pow(this.planet.vehicle_level || 1, 1.2);
-                const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
-                
-                this.vehicleHP = Math.max(0, 100 - totalDamage);
                 let displaySeconds = 0;
 
                 if (this.planet.vehicle_status === 'exploring') {
@@ -222,16 +237,24 @@ const game = {
                     displaySeconds = secondsOut;
 
                     // Auto-Recall
-                    if (this.planet.research_auto_recall && this.vehicleHP <= 87) {
+                    if (this.planet.research_auto_recall && this.vehicleHP <= 90 && !this.recallPending && !this.refreshPromise) {
                         this.recallVehicle();
                     }
                 } else {
                     const recallTime = new Date(this.planet.vehicle_recall_time + " UTC");
                     const secondsReturning = (now - recallTime) / 1000;
                     const secondsToReturn = (recallTime - startTime) / 1000;
+                    const missionCompleteAfter = secondsToReturn * 2;
+                    damageSeconds = Math.min(secondsOut, missionCompleteAfter);
                     displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
-                    if (secondsReturning >= secondsToReturn) this.finishExpedition();
+                    if (secondsReturning >= secondsToReturn) {
+                        this.refreshDashboard();
+                        return;
+                    }
                 }
+
+                const totalDamage = (damageSeconds * (baseDamageRate + (damageSeconds * acceleration))) / armorFactor;
+                this.vehicleHP = Math.max(0, 100 - totalDamage);
 
                 const mins = Math.floor(displaySeconds / 60);
                 const secs = Math.floor(displaySeconds % 60);
@@ -246,15 +269,13 @@ const game = {
                 const now = new Date();
                 const startTime = new Date(this.planet.vehicle2_start_time + " UTC");
                 const secondsOut = (now - startTime) / 1000;
+                let damageSeconds = secondsOut;
                 
                 const baseDamageRate = 0.1; 
                 const acceleration = 0.003;
                 // Armor is 2x more effective (level counts double for the bonus)
                 const effectiveLevel = 1 + ((this.planet.vehicle2_level || 1) - 1) * 2;
                 const armorFactor = Math.pow(effectiveLevel, 1.2);
-                const totalDamage = (secondsOut * (baseDamageRate + (secondsOut * acceleration))) / armorFactor;
-                
-                this.vehicle2HP = Math.max(0, 100 - totalDamage);
                 let displaySeconds = 0;
 
                 if (this.planet.vehicle2_status === 'exploring') {
@@ -266,16 +287,24 @@ const game = {
                     displaySeconds = secondsOut;
 
                     // Auto-Recall
-                    if (this.planet.research_auto_recall && this.vehicle2HP <= 80) {
+                    if (this.planet.research_auto_recall && this.vehicle2HP <= 90 && !this.recallVehicle2Pending && !this.refreshPromise) {
                         this.recallVehicle2();
                     }
                 } else {
                     const recallTime = new Date(this.planet.vehicle2_recall_time + " UTC");
                     const secondsReturning = (now - recallTime) / 1000;
                     const secondsToReturn = (recallTime - startTime) / 1000;
+                    const missionCompleteAfter = secondsToReturn * 2;
+                    damageSeconds = Math.min(secondsOut, missionCompleteAfter);
                     displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
-                    if (secondsReturning >= secondsToReturn) this.finishExpedition2();
+                    if (secondsReturning >= secondsToReturn) {
+                        this.refreshDashboard();
+                        return;
+                    }
                 }
+
+                const totalDamage = (damageSeconds * (baseDamageRate + (damageSeconds * acceleration))) / armorFactor;
+                this.vehicle2HP = Math.max(0, 100 - totalDamage);
 
                 const mins = Math.floor(displaySeconds / 60);
                 const secs = Math.floor(displaySeconds % 60);
@@ -678,11 +707,39 @@ const game = {
     },
 
     async recallVehicle() {
-        await this.submitAction('api.php?action=recall_vehicle');
+        if (this.recallPending) return;
+
+        this.recallPending = true;
+        try {
+            const res = await fetch('api.php?action=recall_vehicle', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.success || data.error === 'Vozidlo zrovna neni na pruzkumu!') {
+                await this.refreshDashboard();
+            } else {
+                alert(data.error || 'Akci se nepodarilo dokoncit.');
+            }
+        } finally {
+            this.recallPending = false;
+        }
     },
 
     async recallVehicle2() {
-        await this.submitAction('api.php?action=recall_vehicle2');
+        if (this.recallVehicle2Pending) return;
+
+        this.recallVehicle2Pending = true;
+        try {
+            const res = await fetch('api.php?action=recall_vehicle2', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.success || data.error === 'Druhe vozidlo zrovna neni na pruzkumu!') {
+                await this.refreshDashboard();
+            } else {
+                alert(data.error || 'Akci se nepodarilo dokoncit.');
+            }
+        } finally {
+            this.recallVehicle2Pending = false;
+        }
     },
 
     async finishExpedition() {

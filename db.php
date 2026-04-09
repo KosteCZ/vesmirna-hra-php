@@ -239,11 +239,20 @@ function getPlanetData($userId, $db) {
             $startTimeStr = $planet['vehicle_start_time'] ?? 'now';
             $startTime = new DateTime($startTimeStr);
             $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
+            $damageSeconds = $secondsSinceStart;
+
+            if ($vehicleStatus === 'returning') {
+                $recallTimeStr = $planet['vehicle_recall_time'] ?? 'now';
+                $recallTime = new DateTime($recallTimeStr);
+                $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
+                $missionCompleteAfter = $secondsToReturn * 2;
+                $damageSeconds = min($secondsSinceStart, $missionCompleteAfter);
+            }
             
             $baseDamageRate = 0.1; 
             $acceleration = 0.003;
             $armorFactor = pow($vehicleLevel, 1.2);
-            $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $armorFactor;
+            $totalDamage = ($damageSeconds * ($baseDamageRate + ($damageSeconds * $acceleration))) / $armorFactor;
 
             $currentHP = max(0, 100 - $totalDamage);
             
@@ -283,13 +292,22 @@ function getPlanetData($userId, $db) {
             $startTimeStr = $planet['vehicle2_start_time'] ?? 'now';
             $startTime = new DateTime($startTimeStr);
             $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
+            $damageSeconds = $secondsSinceStart;
+
+            if ($vehicle2Status === 'returning') {
+                $recallTimeStr = $planet['vehicle2_recall_time'] ?? 'now';
+                $recallTime = new DateTime($recallTimeStr);
+                $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
+                $missionCompleteAfter = $secondsToReturn * 2;
+                $damageSeconds = min($secondsSinceStart, $missionCompleteAfter);
+            }
             
             $baseDamageRate = 0.1; 
             $acceleration = 0.003;
             // Armor is 2x more effective (level counts double for the bonus)
             $effectiveLevel = 1 + ($vehicle2Level - 1) * 2;
             $armorFactor = pow($effectiveLevel, 1.2);
-            $totalDamage = ($secondsSinceStart * ($baseDamageRate + ($secondsSinceStart * $acceleration))) / $armorFactor;
+            $totalDamage = ($damageSeconds * ($baseDamageRate + ($damageSeconds * $acceleration))) / $armorFactor;
 
             $currentHP = max(0, 100 - $totalDamage);
             
@@ -344,11 +362,11 @@ function getPlanetData($userId, $db) {
         // --- Auto-Recall Logic (Offline) ---
         $autoRecall = $planet['research_auto_recall'] ?? 0;
         if ($autoRecall) {
-            if ($vehicleStatus === 'exploring' && $vehicleHP <= 87) {
+            if ($vehicleStatus === 'exploring' && $vehicleHP <= 90) {
                 $vehicleStatus = 'returning';
                 safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
-            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 80) {
+            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 90) {
                 $vehicle2Status = 'returning';
                 safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }

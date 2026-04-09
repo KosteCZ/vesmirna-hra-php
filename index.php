@@ -451,7 +451,7 @@ session_start();
 
                 <div id="research-auto-recall-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
                     <p><strong>Automatický návratový systém</strong></p>
-                    <p style="font-size: 0.9rem; color: #888;">Vozidla se automaticky vrátí z expedice, pokud jejich zdraví klesne na 87 %.</p>
+                    <p style="font-size: 0.9rem; color: #888;">Vozidla se automaticky vrátí z expedice, pokud jejich zdraví klesne na 90 %.</p>
                     <button id="research-auto-recall-btn" onclick="game.researchAutoRecall()" style="background: #00d2ff; color: black; margin-top: 10px;">
                         Vyzkoumat (7500 Zkumavek)
                     </button>
@@ -485,7 +485,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.04.07.0832
+        v2026.04.09.2350
     </footer>
 
     <script src="script.js"></script>
