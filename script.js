@@ -146,10 +146,26 @@ const game = {
                 <td>${i + 1}.</td>
                 <td>${p.player_name}${iconsHtml}</td>
                 <td>Lvl ${p.mine_level}</td>
-                <td>${p.last_login || '---'}</td>
+                <td>${this.formatUtcDateTime(p.last_login)}</td>
             `;
             body.appendChild(tr);
         });
+    },
+
+    formatUtcDateTime(value) {
+        if (!value) return '---';
+
+        const parsed = new Date(value.replace(' ', 'T') + 'Z');
+        if (Number.isNaN(parsed.getTime())) return value;
+
+        return new Intl.DateTimeFormat(undefined, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).format(parsed);
     },
 
     startLoop() {
