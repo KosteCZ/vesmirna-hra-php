@@ -547,7 +547,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.04.11.1427
+        v2026.04.14.1530
     </footer>
 
     <script src="script.js"></script>
