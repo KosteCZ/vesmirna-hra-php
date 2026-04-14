@@ -90,7 +90,13 @@ $columnsToAdd = [
     'research_advanced_lab' => "INTEGER DEFAULT 0",
     'research_warehouse_copper' => "INTEGER DEFAULT 0",
     'research_drone_upgrade_3' => "INTEGER DEFAULT 0",
-    'research_auto_recall' => "INTEGER DEFAULT 0"
+    'research_auto_recall' => "INTEGER DEFAULT 0",
+    'research_rocket_workshop' => "INTEGER DEFAULT 0",
+    'rocket_workshop_level' => "INTEGER DEFAULT 0",
+    'rocket_workshop_status' => "TEXT DEFAULT 'idle'",
+    'rocket_workshop_started_at' => "DATETIME",
+    'rocket_workshop_ready_at' => "DATETIME",
+    'rocket_parts' => "TEXT DEFAULT ''"
 ];
 
 $res = $db->query("PRAGMA table_info(planets)");
@@ -144,6 +150,49 @@ function safePlanetWrite(PDO $db, string $sql, array $params): bool {
     }
 }
 
+function getRocketPartDefinitions(): array {
+    return [
+        'rocket_tip' => "\u{0160}pi\u{010d}ka rakety",
+        'rocket_body' => 'Trup rakety',
+        'fuel_tank' => "Palivov\u{00e9} n\u{00e1}dr\u{017e}e",
+        'jet_engine' => "Tryskov\u{00fd} motor",
+        'satellite' => 'Satelit',
+        'solar_panel' => "Sol\u{00e1}rn\u{00ed} panel",
+        'seat' => 'Sedadlo',
+        'fuel_canister' => "Kanystr s palivem",
+        'electronics' => "Elektronick\u{00e9} za\u{0159}\u{00ed}zen\u{00ed}",
+        'tools' => "N\u{00e1}\u{0159}ad\u{00ed}"
+    ];
+}
+
+function getDefaultRocketPartsInventory(): array {
+    $inventory = [];
+    foreach (getRocketPartDefinitions() as $key => $_label) {
+        $inventory[$key] = 0;
+    }
+
+    return $inventory;
+}
+
+function normalizeRocketPartsInventory($rawInventory): array {
+    $inventory = getDefaultRocketPartsInventory();
+    if (!is_string($rawInventory) || $rawInventory === '') {
+        return $inventory;
+    }
+
+    $decoded = json_decode($rawInventory, true);
+    if (!is_array($decoded)) {
+        return $inventory;
+    }
+
+    foreach ($inventory as $key => $defaultValue) {
+        $value = $decoded[$key] ?? $defaultValue;
+        $inventory[$key] = max(0, min(10, (int) $value));
+    }
+
+    return $inventory;
+}
+
 /**
  * Get current planet data for a user
  */
@@ -192,6 +241,13 @@ function getPlanetData($userId, $db) {
         $tubeProd = $labLvl * 0.05; // Base production rate
         $tubeLimit = ($labStorageLvl > 0) ? ($labStorageLvl * 500) : 100;
         $currentTubes = $planet['res_tubes'] ?? 0;
+        $rocketParts = normalizeRocketPartsInventory($planet['rocket_parts'] ?? '');
+        $availableRocketParts = [];
+        foreach ($rocketParts as $partKey => $partCount) {
+            if ($partCount < 10) {
+                $availableRocketParts[] = $partKey;
+            }
+        }
         
         if (($planet['research_advanced_lab'] ?? 0)) {
             $totalExtraEnergyNeeded += ($labLvl * 1.5);
@@ -372,6 +428,23 @@ function getPlanetData($userId, $db) {
             }
         }
 
+        // --- Rocket Workshop Offline Logic ---
+        $rocketWorkshopStatus = $planet['rocket_workshop_status'] ?? 'idle';
+        $rocketWorkshopStartedAt = $planet['rocket_workshop_started_at'] ?? null;
+        $rocketWorkshopReadyAt = $planet['rocket_workshop_ready_at'] ?? null;
+
+        if (($planet['research_rocket_workshop'] ?? 0) && $rocketWorkshopStatus === 'producing' && $rocketWorkshopReadyAt) {
+            $readyAt = new DateTime($rocketWorkshopReadyAt);
+            if ($now >= $readyAt) {
+                $rocketWorkshopStatus = 'ready';
+                safePlanetWrite(
+                    $db,
+                    "UPDATE planets SET rocket_workshop_status = 'ready', last_updated = ? WHERE id = ?",
+                    [date('Y-m-d H:i:s'), $planet['id']]
+                );
+            }
+        }
+
         // --- PERSISTENCE: Save calculated resources back to DB ---
         $updateSql = "UPDATE planets SET 
             iron_amount = ?, energy_amount = ?, crystal_amount = ?, 
@@ -413,11 +486,19 @@ function getPlanetData($userId, $db) {
             'research_warehouse_copper' => $planet['research_warehouse_copper'] ?? 0,
             'research_auto_recall' => $planet['research_auto_recall'] ?? 0,
             'research_advanced_lab' => $planet['research_advanced_lab'] ?? 0,
+            'research_rocket_workshop' => $planet['research_rocket_workshop'] ?? 0,
             'lab_level' => $labLvl,
             'lab_storage_level' => $labStorageLvl,
             'res_tubes' => $newTubes,
             'tube_production' => $tubeProd,
             'tube_storage_limit' => $tubeLimit,
+            'rocket_workshop_level' => $planet['rocket_workshop_level'] ?? 0,
+            'rocket_workshop_status' => $rocketWorkshopStatus,
+            'rocket_workshop_started_at' => $rocketWorkshopStartedAt,
+            'rocket_workshop_ready_at' => $rocketWorkshopReadyAt,
+            'rocket_parts' => $rocketParts,
+            'rocket_parts_total' => array_sum($rocketParts),
+            'rocket_parts_all_completed' => count($availableRocketParts) === 0,
             'vehicle_level' => $vehicleLevel,
             'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
             'vehicle_hp' => $vehicleHP,
@@ -447,6 +528,5 @@ function getPlanetData($userId, $db) {
         return isset($planet) ? $planet : null;
     }
 }
-
 
 

@@ -63,9 +63,18 @@ session_start();
     <main>
         <header class="top-bar">
             <div class="logo">🚀 Vesmírná Kolonie</div>
-            <div id="user-info" class="user-pill hidden">
-                <span id="player-name"></span>
-                <button class="logout-btn" onclick="auth.logout()">✕</button>
+            <div class="top-bar-controls">
+                <div id="graphics-toggle-container" class="graphics-toggle">
+                    <span class="toggle-label">Grafika</span>
+                    <label class="switch">
+                        <input type="checkbox" id="graphics-toggle" onclick="game.toggleGraphics()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div id="user-info" class="user-pill hidden">
+                    <span id="player-name"></span>
+                    <button class="logout-btn" onclick="auth.logout()">✕</button>
+                </div>
             </div>
         </header>
 
@@ -103,7 +112,7 @@ session_start();
             <!-- Resource Section -->
             <section class="resources">
                 <div class="res-card iron">
-                    <div class="res-icon"><svg width="24" height="24"><use href="#icon-iron"/></svg></div>
+                    <div class="res-icon" id="icon-iron-container"><svg width="24" height="24"><use href="#icon-iron"/></svg></div>
                     <div class="res-data">
                         <span class="label">Železo</span>
                         <span class="value"><span id="display-iron">0</span> <small>/ <span id="display-limit">0</span></small></span>
@@ -115,7 +124,7 @@ session_start();
                 </div>
 
                 <div class="res-card energy">
-                    <div class="res-icon"><svg width="24" height="24"><use href="#icon-energy"/></svg></div>
+                    <div class="res-icon" id="icon-energy-container"><svg width="24" height="24"><use href="#icon-energy"/></svg></div>
                     <div class="res-data">
                         <span class="label">Energie</span>
                         <span class="value" id="display-energy">0</span>
@@ -124,7 +133,7 @@ session_start();
                 </div>
 
                 <div class="res-card crystal">
-                    <div class="res-icon" style="color: #bc4aff;"><svg width="24" height="24"><use href="#icon-crystal"/></svg></div>
+                    <div class="res-icon" id="icon-crystal-container" style="color: #bc4aff;"><svg width="24" height="24"><use href="#icon-crystal"/></svg></div>
                     <div class="res-data">
                         <span class="label">Krystaly</span>
                         <span class="value" id="display-crystal">0</span>
@@ -132,7 +141,7 @@ session_start();
                 </div>
 
                 <div id="res-copper-card" class="res-card copper hidden" style="border-color: #b87333;">
-                    <div class="res-icon" style="color: #b87333;"><svg width="24" height="24"><use href="#icon-copper"/></svg></div>
+                    <div class="res-icon" id="icon-copper-container" style="color: #b87333;"><svg width="24" height="24"><use href="#icon-copper"/></svg></div>
                     <div class="res-data">
                         <span class="label">Měď</span>
                         <span class="value"><span id="display-copper">0</span> <small>/ <span id="display-copper-limit">0</span></small></span>
@@ -144,7 +153,7 @@ session_start();
                 </div>
 
                 <div id="res-tubes-card" class="res-card tubes hidden" style="border-color: #00d2ff;">
-                    <div class="res-icon" style="color: #00d2ff;"><svg width="24" height="24"><use href="#icon-tube"/></svg></div>
+                    <div class="res-icon" id="icon-tubes-container" style="color: #00d2ff;"><svg width="24" height="24"><use href="#icon-tube"/></svg></div>
                     <div class="res-data">
                         <span class="label">Zkumavky</span>
                         <span class="value"><span id="display-tubes">0</span> <small>/ <span id="display-tubes-limit">0</span></small></span>
@@ -164,7 +173,7 @@ session_start();
             <!-- Building Section -->
             <section class="buildings">
                 <div class="building-card">
-                    <svg width="40" height="40"><use href="#icon-mine"/></svg>
+                    <div id="icon-mine-container"><svg width="40" height="40"><use href="#icon-mine"/></svg></div>
                     <h3>Důl na železo</h3>
                     <p class="lvl">Úroveň <span id="mine-lvl">0</span></p>
                     <p class="desc">Produkuje železo (stojí energii).</p>
@@ -174,7 +183,7 @@ session_start();
                 </div>
 
                 <div class="building-card">
-                    <svg width="40" height="40"><use href="#icon-solar"/></svg>
+                    <div id="icon-solar-container"><svg width="40" height="40"><use href="#icon-solar"/></svg></div>
                     <h3>Solární elektrárna</h3>
                     <p class="lvl">Úroveň <span id="solar-lvl">0</span></p>
                     <p class="desc">Vyrábí energii pro provoz budov.</p>
@@ -184,7 +193,7 @@ session_start();
                 </div>
 
                 <div class="building-card">
-                    <svg width="40" height="40"><use href="#icon-warehouse"/></svg>
+                    <div id="icon-warehouse-container"><svg width="40" height="40"><use href="#icon-warehouse"/></svg></div>
                     <h3>Sklad železa</h3>
                     <p class="lvl">Úroveň <span id="warehouse-lvl">0</span></p>
                     <p class="desc">Zvyšuje maximální kapacitu železa.</p>
@@ -200,7 +209,7 @@ session_start();
             <!-- Copper Buildings Section -->
             <section id="copper-buildings" class="buildings hidden" style="margin-top: 20px;">
                 <div class="building-card" style="border-color: #b87333;">
-                    <svg width="40" height="40" style="color: #b87333;"><use href="#icon-mine"/></svg>
+                    <div id="icon-mine-copper-container"><svg width="40" height="40" style="color: #b87333;"><use href="#icon-mine"/></svg></div>
                     <h3>Důl na měď</h3>
                     <p class="lvl">Úroveň <span id="mine-copper-lvl">0</span></p>
                     <p class="desc">Produkuje měď pro pokročilé stavby.</p>
@@ -210,7 +219,7 @@ session_start();
                 </div>
 
                 <div class="building-card" style="border-color: #b87333;">
-                    <svg width="40" height="40" style="color: #b87333;"><use href="#icon-warehouse"/></svg>
+                    <div id="icon-warehouse-copper-container"><svg width="40" height="40" style="color: #b87333;"><use href="#icon-warehouse"/></svg></div>
                     <h3>Sklad mědi</h3>
                     <p class="lvl">Úroveň <span id="warehouse-copper-lvl">0</span></p>
                     <p class="desc">Zvyšuje maximální kapacitu mědi.</p>
@@ -223,7 +232,7 @@ session_start();
             <!-- Advanced Lab Buildings -->
             <section id="lab-buildings" class="buildings hidden" style="margin-top: 20px;">
                 <div class="building-card" style="border-color: #00d2ff;">
-                    <svg width="40" height="40" style="color: #00d2ff;"><use href="#icon-lab"/></svg>
+                    <div id="icon-lab-container"><svg width="40" height="40" style="color: #00d2ff;"><use href="#icon-lab"/></svg></div>
                     <h3>Pokročilá laboratoř</h3>
                     <p class="lvl">Úroveň <span id="lab-lvl">0</span></p>
                     <p class="desc">Vyrábí zkumavky pro vědecké účely.</p>
@@ -233,13 +242,52 @@ session_start();
                 </div>
 
                 <div class="building-card" style="border-color: #00d2ff;">
-                    <svg width="40" height="40" style="color: #00d2ff;"><use href="#icon-warehouse"/></svg>
+                    <div id="icon-lab-storage-container"><svg width="40" height="40" style="color: #00d2ff;"><use href="#icon-warehouse"/></svg></div>
                     <h3>Sklad zkumavek</h3>
                     <p class="lvl">Úroveň <span id="lab-storage-lvl">0</span></p>
                     <p class="desc">Zvětšuje prostor pro hotové zkumavky.</p>
                     <button onclick="game.upgradeLabStorage()" id="upgrade-lab-storage-btn">
                         Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="lab-storage-upgrade-cost"></span>
                     </button>
+                </div>
+            </section>
+
+            <section id="rocket-workshop-section" class="card hidden" style="margin-bottom: 30px;">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <span id="icon-rocket-workshop-container" style="display: inline-flex; vertical-align: middle;">🚀</span>
+                    Raketov&aacute; d&iacute;lna
+                </h3>
+                <p style="font-size: 0.9rem; color: #888; margin-top: 0;">
+                    Experiment&aacute;ln&iacute; d&iacute;lna pro kompletaci raketov&yacute;ch sou&#269;&aacute;stek. Ka&#382;dou &#269;&aacute;st lze vyrobit maxim&aacute;ln&#283; 10x.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+                    <div style="flex: 1 1 260px;">
+                        <p class="lvl">&Uacute;rove&#328; <span id="rocket-workshop-lvl">0</span></p>
+                        <p id="rocket-workshop-status-text" style="margin: 8px 0 12px; color: #d7e2f0;">D&iacute;lna je p&#345;ipravena.</p>
+                        <p id="rocket-workshop-timer-wrap" class="hidden" style="font-size: 0.9rem; margin: 0 0 12px; color: #00d2ff;">
+                            Dokon&#269;en&iacute; za: <strong><span id="rocket-workshop-timer">00:00:00</span></strong>
+                        </p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="rocket-workshop-start-btn" onclick="game.startRocketWorkshopProduction()" style="width: auto; background: #ff7043;">
+                                Spustit v&yacute;robu (10000 zkumavek)
+                            </button>
+                            <button id="rocket-workshop-collect-btn" onclick="game.collectRocketWorkshopProduct()" class="hidden" style="width: auto; background: #28a745;">
+                                Vyzvednout v&yacute;tvor
+                            </button>
+                        </div>
+                        <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745;">
+                            V&#353;echny druhy sou&#269;&aacute;stek u&#382; m&aacute;&scaron; vyroben&eacute; 10x.
+                        </p>
+                    </div>
+
+                    <div style="flex: 1 1 320px;">
+                        <p style="margin: 0 0 10px;">
+                            Hotov&eacute; d&iacute;ly: <strong><span id="rocket-parts-total">0</span> / 100</strong>
+                        </p>
+                        <div id="rocket-parts-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -251,14 +299,17 @@ session_start();
 
             <!-- Expedition Section -->
             <section class="expedition card" style="margin-bottom: 30px;">
-                <h3>🛰️ Hangáry a expedice</h3>
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <span id="icon-hangar-container" style="display: inline-flex; vertical-align: middle;">🛰️</span> 
+                    Hangáry a expedice
+                </h3>
                 
                 <!-- Hangar 1: Iron Vehicle -->
                 <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #30363d;">
                     <p style="margin-top: 0; color: #888; font-size: 0.85rem;">PRŮZKUMNÉ VOZIDLO I (Železo)</p>
                     <div id="no-vehicle-view" class="hidden">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <div style="background: #333; padding: 10px; border-radius: 50%; opacity: 0.5;">
+                            <div id="no-vehicle-icon-container" style="background: #333; padding: 10px; border-radius: 50%; opacity: 0.5;">
                                 <svg width="30" height="30"><use href="#icon-vehicle"/></svg>
                             </div>
                             <div style="flex-grow: 1;">
@@ -271,7 +322,9 @@ session_start();
                     
                     <div id="vehicle-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
                         <div style="flex: 1; text-align: center;">
-                            <svg width="50" height="50" style="color: #bc4aff;"><use href="#icon-vehicle"/></svg>
+                            <div id="vehicle-icon-container">
+                                <svg width="50" height="50" style="color: #bc4aff;"><use href="#icon-vehicle"/></svg>
+                            </div>
                             <p style="font-size: 0.85rem; margin: 5px 0;"><strong>Pancíř Lvl <span id="vehicle-lvl">1</span></strong></p>
                             <p style="font-size: 0.75rem; color: #888; margin: 0;">Senzory Lvl <span id="vehicle-sensor-lvl">1</span></p>
                         </div>
@@ -311,7 +364,7 @@ session_start();
                     <p style="margin-top: 0; color: #b87333; font-size: 0.85rem;">PRŮZKUMNÉ VOZIDLO II (Měď)</p>
                     <div id="no-vehicle2-view" class="hidden">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <div style="background: #b8733333; padding: 10px; border-radius: 50%; opacity: 0.5; color: #b87333;">
+                            <div id="no-vehicle2-icon-container" style="background: #b8733333; padding: 10px; border-radius: 50%; opacity: 0.5; color: #b87333;">
                                 <svg width="30" height="30"><use href="#icon-vehicle"/></svg>
                             </div>
                             <div style="flex-grow: 1;">
@@ -324,7 +377,9 @@ session_start();
                     
                     <div id="vehicle2-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
                         <div style="flex: 1; text-align: center;">
-                            <svg width="50" height="50" style="color: #b87333;"><use href="#icon-vehicle"/></svg>
+                            <div id="vehicle2-icon-container">
+                                <svg width="50" height="50" style="color: #b87333;"><use href="#icon-vehicle"/></svg>
+                            </div>
                             <p style="font-size: 0.85rem; margin: 5px 0;"><strong>Pancíř Lvl <span id="vehicle2-lvl">1</span></strong></p>
                             <p style="font-size: 0.75rem; color: #888; margin: 0;">Senzory Lvl <span id="vehicle2-sensor-lvl">1</span></p>
                         </div>
@@ -362,7 +417,7 @@ session_start();
                 <!-- Drone Sub-section -->
                 <div id="drone-section" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #30363d;">
                     <div id="no-drone-view" class="hidden" style="display: flex; align-items: center; gap: 15px;">
-                        <div style="background: #333; padding: 10px; border-radius: 50%; opacity: 0.5;">
+                        <div id="no-drone-icon-container" style="background: #333; padding: 10px; border-radius: 50%; opacity: 0.5;">
                             <svg width="24" height="24"><use href="#icon-drone"/></svg>
                         </div>
                         <div style="flex-grow: 1;">
@@ -373,7 +428,7 @@ session_start();
                     </div>
 
                     <div id="drone-view" class="hidden" style="display: flex; align-items: center; gap: 15px;">
-                        <div style="background: #bc4aff1a; padding: 10px; border-radius: 50%; color: #bc4aff;">
+                        <div id="drone-icon-container" style="background: #bc4aff1a; padding: 10px; border-radius: 50%; color: #bc4aff;">
                             <svg width="24" height="24"><use href="#icon-drone"/></svg>
                         </div>
                         <div style="flex-grow: 1;">
@@ -454,6 +509,13 @@ session_start();
                     <p style="font-size: 0.9rem; color: #888;">Vozidla se automaticky vrátí z expedice, pokud jejich zdraví klesne na 90 %.</p>
                     <button id="research-auto-recall-btn" onclick="game.researchAutoRecall()" style="background: #00d2ff; color: black; margin-top: 10px;">
                         Vyzkoumat (7500 Zkumavek)
+                    </button>
+                </div>
+                <div id="research-rocket-workshop-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Raketov&aacute; d&iacute;lna</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Za 15000 zkumavek odemkne a rovnou postav&iacute; novou budovu pro osmihodinovou v&yacute;robu raketov&yacute;ch sou&#269;&aacute;stek.</p>
+                    <button id="research-rocket-workshop-btn" onclick="game.researchRocketWorkshop()" style="background: #ff7043; color: black; margin-top: 10px;">
+                        Vyzkoumat a postavit (15000 zkumavek)
                     </button>
                 </div>
             </section>

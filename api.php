@@ -10,6 +10,14 @@ header('Content-Type: application/json');
 const UPGRADE_COST_MULTIPLIER = 100;
 const ALLOWED_COLORS = ['yellow', 'red', 'blue', 'green', 'orange', 'purple'];
 const ALLOWED_UPGRADE_TYPES = ['mine', 'solar', 'warehouse'];
+const ROCKET_WORKSHOP_RESEARCH_COST = 15000;
+const ROCKET_WORKSHOP_PRODUCTION_COST = 10000;
+const ROCKET_WORKSHOP_PRODUCTION_DURATION = 28800;
+
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['error' => 'Neprihlasen!']);
+    exit;
+}
 
 try {
     if (!isset($_SESSION['user_id'])) {
@@ -361,6 +369,112 @@ try {
         } else {
             echo json_encode(['error' => 'Nedostatek zkumavek (7500)!']);
         }
+    }
+
+    if ($action === 'research_rocket_workshop') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_advanced_lab']) {
+            echo json_encode(['error' => 'Musis mit Pokrocilou laborator!']);
+            exit;
+        }
+        if ($planet['research_rocket_workshop']) {
+            echo json_encode(['error' => 'Raketova dilna je jiz postavena!']);
+            exit;
+        }
+
+        if ($planet['res_tubes'] >= ROCKET_WORKSHOP_RESEARCH_COST) {
+            $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, research_rocket_workshop = 1, rocket_workshop_level = 1, rocket_workshop_status = 'idle', rocket_workshop_started_at = NULL, rocket_workshop_ready_at = NULL, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([ROCKET_WORKSHOP_RESEARCH_COST, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek (15000)!']);
+        }
+    }
+
+    if ($action === 'start_rocket_workshop_production') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_rocket_workshop']) {
+            echo json_encode(['error' => 'Raketova dilna neni postavena!']);
+            exit;
+        }
+
+        $rocketParts = $planet['rocket_parts'] ?? getDefaultRocketPartsInventory();
+        $availableParts = array_filter($rocketParts, static fn ($count) => $count < 10);
+        if (count($availableParts) === 0) {
+            echo json_encode(['error' => 'Uz mas vyrobeno vse 10x, dalsi vyroba neni mozna.']);
+            exit;
+        }
+
+        if (($planet['rocket_workshop_status'] ?? 'idle') === 'producing') {
+            echo json_encode(['error' => 'Vyroba uz probiha!']);
+            exit;
+        }
+        if (($planet['rocket_workshop_status'] ?? 'idle') === 'ready') {
+            echo json_encode(['error' => 'Nejdriv si vyzvedni hotovy vytvor.']);
+            exit;
+        }
+        if ($planet['res_tubes'] < ROCKET_WORKSHOP_PRODUCTION_COST) {
+            echo json_encode(['error' => 'Nedostatek zkumavek (10000)!']);
+            exit;
+        }
+
+        $startedAt = new DateTime('now', new DateTimeZone('UTC'));
+        $readyAt = clone $startedAt;
+        $readyAt->modify('+' . ROCKET_WORKSHOP_PRODUCTION_DURATION . ' seconds');
+
+        $stmt = $db->prepare("UPDATE planets SET res_tubes = res_tubes - ?, rocket_workshop_status = 'producing', rocket_workshop_started_at = ?, rocket_workshop_ready_at = ?, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([
+            ROCKET_WORKSHOP_PRODUCTION_COST,
+            $startedAt->format('Y-m-d H:i:s'),
+            $readyAt->format('Y-m-d H:i:s'),
+            date('Y-m-d H:i:s'),
+            $userId
+        ]);
+        echo json_encode(['success' => true]);
+    }
+
+    if ($action === 'collect_rocket_workshop_product') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_rocket_workshop']) {
+            echo json_encode(['error' => 'Raketova dilna neni postavena!']);
+            exit;
+        }
+        if (($planet['rocket_workshop_status'] ?? 'idle') !== 'ready') {
+            echo json_encode(['error' => 'V dilne zatim neni nic k vyzvednuti.']);
+            exit;
+        }
+
+        $rocketParts = $planet['rocket_parts'] ?? getDefaultRocketPartsInventory();
+        $availableKeys = [];
+        foreach ($rocketParts as $partKey => $partCount) {
+            if ($partCount < 10) {
+                $availableKeys[] = $partKey;
+            }
+        }
+
+        if (count($availableKeys) === 0) {
+            $stmt = $db->prepare("UPDATE planets SET rocket_workshop_status = 'idle', rocket_workshop_started_at = NULL, rocket_workshop_ready_at = NULL, last_updated = ? WHERE user_id = ?");
+            $stmt->execute([date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['error' => 'Uz mas vyrobeno vse 10x, dalsi vyroba neni mozna.']);
+            exit;
+        }
+
+        $selectedKey = $availableKeys[random_int(0, count($availableKeys) - 1)];
+        $rocketParts[$selectedKey] = min(10, ($rocketParts[$selectedKey] ?? 0) + 1);
+        $partDefinitions = getRocketPartDefinitions();
+
+        $stmt = $db->prepare("UPDATE planets SET rocket_parts = ?, rocket_workshop_status = 'idle', rocket_workshop_started_at = NULL, rocket_workshop_ready_at = NULL, last_updated = ? WHERE user_id = ?");
+        $stmt->execute([
+            json_encode($rocketParts),
+            date('Y-m-d H:i:s'),
+            $userId
+        ]);
+
+        echo json_encode([
+            'success' => true,
+            'part_key' => $selectedKey,
+            'part_label' => $partDefinitions[$selectedKey] ?? $selectedKey
+        ]);
     }
 
     if ($action === 'upgrade_warehouse_copper_eff') {

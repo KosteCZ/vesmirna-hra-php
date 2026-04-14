@@ -17,6 +17,85 @@ main { max-width: 900px; margin: 0 auto; padding: 20px; }
   border-bottom: 1px solid #1a1f29;
 }
 
+.top-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.graphics-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #1a1f29;
+  border: 1px solid #30363d;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #888;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #4af2ff33;
+  border-color: #4af2ff;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #4af2ff;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+  background-color: #4af2ff;
+}
+
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.res-icon img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
 .logo { font-size: 1.5rem; font-weight: bold; color: #4af2ff; }
 
 .user-pill {

@@ -20,6 +20,11 @@ const auth = {
         
         document.getElementById('loading-section').classList.add('hidden');
         
+        // Sync graphics toggle
+        const useImages = localStorage.getItem('game_use_images') === 'true';
+        document.getElementById('graphics-toggle').checked = useImages;
+        game.useImages = useImages;
+
         if (data.authenticated) {
             game.showDashboard(data.user);
         } else {
@@ -39,9 +44,9 @@ const game = {
     displayEnergy: 0,
     displayCrystal: 0,
     displayCopper: 0,
-    displayTubes: 0, // Tracks test tubes locally
-    displayAlien: {}, // Tracks alien resource amounts locally
-    displayDrone: 0, // Tracks drone storage locally
+    displayTubes: 0, 
+    displayAlien: {}, 
+    displayDrone: 0, 
     vehicleHP: 100,
     vehicleCrystals: 0,
     vehicle2HP: 100,
@@ -50,6 +55,23 @@ const game = {
     refreshPromise: null,
     recallPending: false,
     recallVehicle2Pending: false,
+    useImages: false,
+
+    toggleGraphics() {
+        this.useImages = document.getElementById('graphics-toggle').checked;
+        localStorage.setItem('game_use_images', this.useImages);
+        this.updateUI();
+        this.updateAlienUI();
+        this.updateResearchUI();
+        this.updateRocketWorkshopUI();
+    },
+
+    renderIcon(symbolId, imagePath = null, size = 24) {
+        if (this.useImages && imagePath) {
+            return `<img src="resources/${imagePath}" width="${size}" height="${size}" alt="icon">`;
+        }
+        return `<svg width="${size}" height="${size}"><use href="#${symbolId}"/></svg>`;
+    },
 
     showDashboard(user) {
         document.getElementById('auth-section').classList.add('hidden');
@@ -139,7 +161,8 @@ const game = {
             let iconsHtml = '';
             researched.forEach(color => {
                 const colorCode = this.getColorCode(color);
-                iconsHtml += `<svg width="16" height="16" style="color: ${colorCode}; margin-left: 5px; vertical-align: middle;"><use href="#icon-alien-res"/></svg>`;
+                const icon = this.renderIcon('icon-alien-res', `am-${color}.png`, 16);
+                iconsHtml += `<span style="color: ${colorCode}; margin-left: 5px; vertical-align: middle; display: inline-flex;">${icon}</span>`;
             });
 
             tr.innerHTML = `
@@ -337,6 +360,31 @@ const game = {
     updateUI() {
         if (!this.planet) return;
         
+        // Refresh static icons if needed (can be optimized to only run on toggle, but here for simplicity)
+        document.getElementById('icon-iron-container').innerHTML = this.renderIcon('icon-iron', 'iron.png');
+        document.getElementById('icon-energy-container').innerHTML = this.renderIcon('icon-energy', 'electricity.png');
+        document.getElementById('icon-crystal-container').innerHTML = this.renderIcon('icon-crystal', 'crystal.png');
+        document.getElementById('icon-copper-container').innerHTML = this.renderIcon('icon-copper', 'copper.png');
+        document.getElementById('icon-tubes-container').innerHTML = this.renderIcon('icon-tube', 'test-tube.png');
+
+        document.getElementById('icon-mine-container').innerHTML = this.renderIcon('icon-mine', 'mines-iron.png', 40);
+        document.getElementById('icon-solar-container').innerHTML = this.renderIcon('icon-solar', 'solar-power-plant.png', 40);
+        document.getElementById('icon-warehouse-container').innerHTML = this.renderIcon('icon-warehouse', 'storage-iron.png', 40);
+        document.getElementById('icon-mine-copper-container').innerHTML = this.renderIcon('icon-mine', 'mines-copper.png', 40);
+        document.getElementById('icon-warehouse-copper-container').innerHTML = this.renderIcon('icon-warehouse', 'storage-copper.png', 40);
+        document.getElementById('icon-lab-container').innerHTML = this.renderIcon('icon-lab', 'microscope.png', 40);
+        document.getElementById('icon-lab-storage-container').innerHTML = this.renderIcon('icon-warehouse', 'storage-test-tubes.png', 40);
+        
+        const hangarIconContainer = document.getElementById('icon-hangar-container');
+        if (hangarIconContainer) {
+            hangarIconContainer.innerHTML = this.renderIcon('icon-vehicle', 'hangar.png', 28);
+        }
+
+        const workshopIconContainer = document.getElementById('icon-rocket-workshop-container');
+        if (workshopIconContainer) {
+            workshopIconContainer.innerHTML = this.renderIcon('icon-lab', 'space-workshop.png', 28);
+        }
+
         const ironLimit = this.planet.iron_storage_limit;
         document.getElementById('display-iron').innerText = Math.floor(this.displayIron);
         document.getElementById('display-limit').innerText = ironLimit;
@@ -535,7 +583,23 @@ const game = {
             } else {
                 resAutoRecall.classList.add('hidden');
             }
+
+            // 4. Rocket Workshop
+            const resRocketWorkshop = document.getElementById('research-rocket-workshop-container');
+            if (!this.planet.research_rocket_workshop) {
+                resRocketWorkshop.classList.remove('hidden');
+                document.getElementById('research-rocket-workshop-btn').disabled = this.displayTubes < 15000;
+            } else {
+                resRocketWorkshop.classList.add('hidden');
+            }
+        } else {
+            document.getElementById('research-wh-copper-container').classList.add('hidden');
+            document.getElementById('research-drone-3-container').classList.add('hidden');
+            document.getElementById('research-auto-recall-container').classList.add('hidden');
+            document.getElementById('research-rocket-workshop-container').classList.add('hidden');
         }
+
+        this.updateRocketWorkshopUI();
 
         // Drone Upgrade Research UI
         const droneResContainer = document.getElementById('drone-research-container');
@@ -583,9 +647,11 @@ const game = {
         if (this.planet && (this.planet.vehicle_level === 0 && this.planet.vehicle_status !== 'destroyed')) {
             document.getElementById('no-vehicle-view').classList.remove('hidden');
             document.getElementById('vehicle-view').classList.add('hidden');
+            document.getElementById('no-vehicle-icon-container').innerHTML = this.renderIcon('icon-vehicle', 'vehicle-1.png', 30);
         } else if (this.planet) {
             document.getElementById('no-vehicle-view').classList.add('hidden');
             document.getElementById('vehicle-view').classList.remove('hidden');
+            document.getElementById('vehicle-icon-container').innerHTML = this.renderIcon('icon-vehicle', 'vehicle-1.png', 50);
             document.getElementById('vehicle-lvl').innerText = this.planet.vehicle_level;
 
             const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
@@ -620,9 +686,11 @@ const game = {
             if (this.planet.vehicle2_level === 0 && this.planet.vehicle2_status !== 'destroyed') {
                 document.getElementById('no-vehicle2-view').classList.remove('hidden');
                 document.getElementById('vehicle2-view').classList.add('hidden');
+                document.getElementById('no-vehicle2-icon-container').innerHTML = this.renderIcon('icon-vehicle', 'vehicle-2.png', 30);
             } else {
                 document.getElementById('no-vehicle2-view').classList.add('hidden');
                 document.getElementById('vehicle2-view').classList.remove('hidden');
+                document.getElementById('vehicle2-icon-container').innerHTML = this.renderIcon('icon-vehicle', 'vehicle-2.png', 50);
                 document.getElementById('vehicle2-lvl').innerText = this.planet.vehicle2_level;
 
                 const sensor2Lvl = this.planet.vehicle2_sensor_lvl || 1;
@@ -658,6 +726,7 @@ const game = {
         if (this.planet && this.planet.has_drone) {
             document.getElementById('no-drone-view').classList.add('hidden');
             document.getElementById('drone-view').classList.remove('hidden');
+            document.getElementById('drone-icon-container').innerHTML = this.renderIcon('icon-drone', 'dron-crystals.png', 24);
             const limit = this.planet.drone_storage_limit || 100;
 
             document.getElementById('drone-storage-val').innerText = Math.floor(this.displayDrone);
@@ -669,6 +738,7 @@ const game = {
             document.getElementById('collect-drone-btn').disabled = this.displayDrone < 1;
         } else if (this.planet) {
             document.getElementById('no-drone-view').classList.remove('hidden');
+            document.getElementById('no-drone-icon-container').innerHTML = this.renderIcon('icon-drone', 'dron-crystals.png', 24);
             document.getElementById('drone-view').classList.add('hidden');
         }
     },
@@ -818,6 +888,21 @@ const game = {
         await this.submitAction('api.php?action=upgrade_lab_storage');
     },
 
+    async researchRocketWorkshop() {
+        await this.submitAction('api.php?action=research_rocket_workshop');
+    },
+
+    async startRocketWorkshopProduction() {
+        await this.submitAction('api.php?action=start_rocket_workshop_production');
+    },
+
+    async collectRocketWorkshopProduct() {
+        const data = await this.submitAction('api.php?action=collect_rocket_workshop_product');
+        if (data && data.part_label) {
+            alert(`Z\u00edskal jsi: ${data.part_label}`);
+        }
+    },
+
     async buyDrone() {
         if (this.displayCrystal < 250) return alert("Nedostatek krystalů!");
         await this.submitAction('api.php?action=buy_drone');
@@ -828,6 +913,19 @@ const game = {
     },
 
     // --- Alien Content Methods ---
+    rocketPartNames: {
+        rocket_tip: '\u0160pi\u010dka rakety',
+        rocket_body: 'Trup rakety',
+        fuel_tank: 'Palivov\u00e9 n\u00e1dr\u017ee',
+        jet_engine: 'Tryskov\u00fd motor',
+        satellite: 'Satelit',
+        solar_panel: 'Sol\u00e1rn\u00ed panel',
+        seat: 'Sedadlo',
+        fuel_canister: 'Kanystr s palivem',
+        electronics: 'Elektronick\u00e9 za\u0159\u00edzen\u00ed',
+        tools: 'N\u00e1\u0159ad\u00ed'
+    },
+
     colorNames: {
         yellow: 'Žlutý', red: 'Červený', blue: 'Modrý',
         green: 'Zelený', orange: 'Oranžový', purple: 'Fialový'
@@ -873,6 +971,98 @@ const game = {
         await this.submitAction('api.php?action=research_color', formData);
     },
 
+    formatDuration(totalSeconds) {
+        const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+        const hours = Math.floor(safeSeconds / 3600);
+        const minutes = Math.floor((safeSeconds % 3600) / 60);
+        const seconds = safeSeconds % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    },
+
+    updateRocketWorkshopUI() {
+        const section = document.getElementById('rocket-workshop-section');
+        if (!section || !this.planet) return;
+
+        if (!this.planet.research_rocket_workshop) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        section.classList.remove('hidden');
+
+        const inventory = this.planet.rocket_parts || {};
+        const total = Object.values(inventory).reduce((sum, value) => sum + Number(value || 0), 0);
+        const allCompleted = Boolean(this.planet.rocket_parts_all_completed);
+        const status = this.planet.rocket_workshop_status || 'idle';
+        const startBtn = document.getElementById('rocket-workshop-start-btn');
+        const collectBtn = document.getElementById('rocket-workshop-collect-btn');
+        const timerWrap = document.getElementById('rocket-workshop-timer-wrap');
+        const timerEl = document.getElementById('rocket-workshop-timer');
+        const statusEl = document.getElementById('rocket-workshop-status-text');
+        const finishedEl = document.getElementById('rocket-workshop-finished-note');
+        const partsList = document.getElementById('rocket-parts-list');
+
+        document.getElementById('rocket-workshop-lvl').innerText = this.planet.rocket_workshop_level || 1;
+        document.getElementById('rocket-parts-total').innerText = total;
+
+        if (partsList) {
+            partsList.innerHTML = '';
+            Object.entries(this.rocketPartNames).forEach(([key, label]) => {
+                const count = Number(inventory[key] || 0);
+                const item = document.createElement('div');
+                item.style.padding = '8px 10px';
+                item.style.border = '1px solid #30363d';
+                item.style.borderRadius = '10px';
+                item.style.background = count >= 10 ? '#123524' : '#161b22';
+                item.innerHTML = `<strong>${label}</strong><br><span style="color: ${count >= 10 ? '#7ee787' : '#9fb3c8'};">${count} / 10</span>`;
+                partsList.appendChild(item);
+            });
+        }
+
+        finishedEl.classList.toggle('hidden', !allCompleted);
+        collectBtn.classList.toggle('hidden', status !== 'ready');
+        startBtn.classList.toggle('hidden', status === 'ready');
+
+        if (allCompleted) {
+            startBtn.disabled = true;
+            statusEl.innerText = 'D\u00edlna splnila cel\u00fd program. M\u00e1\u0161 v\u0161echny sou\u010d\u00e1stky 10x.';
+            timerWrap.classList.add('hidden');
+            return;
+        }
+
+        if (status === 'producing' && this.planet.rocket_workshop_ready_at) {
+            const readyAt = new Date(this.planet.rocket_workshop_ready_at.replace(' ', 'T') + 'Z');
+            const remainingSeconds = (readyAt.getTime() - Date.now()) / 1000;
+            if (remainingSeconds <= 0) {
+                if (!this.refreshPromise) {
+                    this.refreshDashboard();
+                }
+                statusEl.innerText = 'V\u00fdroba se dokon\u010duje...';
+                startBtn.disabled = true;
+                timerWrap.classList.remove('hidden');
+                timerEl.innerText = '00:00:00';
+                return;
+            }
+
+            statusEl.innerText = 'V\u00fdroba prob\u00edh\u00e1. Po dokon\u010den\u00ed si m\u016f\u017ee\u0161 sou\u010d\u00e1stku vyzvednout.';
+            startBtn.disabled = true;
+            timerWrap.classList.remove('hidden');
+            timerEl.innerText = this.formatDuration(remainingSeconds);
+            return;
+        }
+
+        timerWrap.classList.add('hidden');
+
+        if (status === 'ready') {
+            statusEl.innerText = 'V\u00fdroba je hotov\u00e1. \u010cek\u00e1 na vyzvednut\u00ed.';
+            collectBtn.disabled = false;
+            return;
+        }
+
+        statusEl.innerText = 'D\u00edlna je p\u0159ipravena na dal\u0161\u00ed v\u00fdrobn\u00ed cyklus.';
+        startBtn.disabled = this.displayTubes < 10000;
+    },
+
     updateAlienUI() {
         const researched = this.planet.researched_colors || [];
         const resContainer = document.getElementById('alien-resources');
@@ -897,8 +1087,9 @@ const game = {
             // Add resource card
             const resCard = document.createElement('div');
             resCard.className = `res-card ${color}`;
+            const resIcon = this.renderIcon('icon-alien-res', `am-${color}.png`, 24);
             resCard.innerHTML = `
-                <div class="res-icon" style="color: ${colorCode}"><svg width="24" height="24"><use href="#icon-alien-res"/></svg></div>
+                <div class="res-icon" style="color: ${colorCode}">${resIcon}</div>
                 <div class="res-data">
                     <span class="label">${this.colorNames[color]} materiál</span>
                     <span class="value" id="display-res-${color}">${Math.floor(this.displayAlien[color])}</span>
@@ -910,11 +1101,12 @@ const game = {
             // Add building card
             const bldCard = document.createElement('div');
             bldCard.className = 'building-card';
+            const bldIcon = this.renderIcon('icon-alien-res', `am-${color}.png`, 40);
             const ironCost = (data.lvl + 1) * 500;
             const crystalCost = (data.lvl + 1) * 50;
             
             bldCard.innerHTML = `
-                <div style="color: ${colorCode}"><svg width="40" height="40"><use href="#icon-alien-res"/></svg></div>
+                <div style="color: ${colorCode}">${bldIcon}</div>
                 <h3>${this.colorNames[color]} důl</h3>
                 <p class="lvl">Úroveň ${data.lvl}</p>
                 <p class="desc">Produkuje vzácný ${this.colorNames[color].toLowerCase()} materiál.</p>
@@ -950,14 +1142,14 @@ const game = {
             const amount = parseFloat(data[color] || 0);
             const percent = Math.min(100, (amount / target) * 100);
             const colorCode = this.getColorCode(color);
-            
+            const icon = this.renderIcon('icon-alien-res', `am-${color}.png`, 14);
+
             const item = document.createElement('div');
             item.innerHTML = `
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
-                    <span><svg width="14" height="14" style="color: ${colorCode}; vertical-align: middle; margin-right: 5px;"><use href="#icon-alien-res"/></svg> <strong>${this.colorNames[color]} materiál</strong></span>
+                    <span style="display: flex; align-items: center;"><span style="color: ${colorCode}; vertical-align: middle; margin-right: 5px; display: inline-flex;">${icon}</span> <strong>${this.colorNames[color]} materiál</strong></span>
                     <span>${Math.floor(amount).toLocaleString()} / ${target.toLocaleString()}</span>
-                </div>
-                <div class="progress-bg" style="height: 12px;">
+                </div>                <div class="progress-bg" style="height: 12px;">
                     <div class="progress-bar" style="width: ${percent}%; background: ${colorCode}; box-shadow: 0 0 10px ${colorCode}66;"></div>
                 </div>
             `;
