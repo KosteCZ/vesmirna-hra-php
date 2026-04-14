@@ -67,7 +67,7 @@ session_start();
                 <div id="graphics-toggle-container" class="graphics-toggle">
                     <span class="toggle-label">Grafika</span>
                     <label class="switch">
-                        <input type="checkbox" id="graphics-toggle" onclick="game.toggleGraphics()">
+                        <input type="checkbox" id="graphics-toggle" onclick="game.toggleGraphics()" checked>
                         <span class="slider round"></span>
                     </label>
                 </div>

@@ -20,8 +20,9 @@ const auth = {
         
         document.getElementById('loading-section').classList.add('hidden');
         
-        // Sync graphics toggle
-        const useImages = localStorage.getItem('game_use_images') === 'true';
+        // Sync graphics toggle - default to true if not set
+        const stored = localStorage.getItem('game_use_images');
+        const useImages = stored === null ? true : stored === 'true';
         document.getElementById('graphics-toggle').checked = useImages;
         game.useImages = useImages;
 
@@ -55,7 +56,7 @@ const game = {
     refreshPromise: null,
     recallPending: false,
     recallVehicle2Pending: false,
-    useImages: false,
+    useImages: true,
 
     toggleGraphics() {
         this.useImages = document.getElementById('graphics-toggle').checked;
@@ -926,6 +927,19 @@ const game = {
         tools: 'N\u00e1\u0159ad\u00ed'
     },
 
+    rocketPartImages: {
+        rocket_tip: 'workshop-items/rocket-cabin.png',
+        rocket_body: 'workshop-items/rocket-body.png',
+        fuel_tank: 'workshop-items/rocket-fuel-tanks.png',
+        jet_engine: 'workshop-items/rocket-engine.png',
+        satellite: 'workshop-items/rocket-satelite.png',
+        solar_panel: 'workshop-items/rocket-solar-panel.png',
+        seat: 'workshop-items/rocket-chair.png',
+        fuel_canister: 'workshop-items/rocket-fuel.png',
+        electronics: 'workshop-items/rocket-device.png',
+        tools: 'workshop-items/tools.png'
+    },
+
     colorNames: {
         yellow: 'Žlutý', red: 'Červený', blue: 'Modrý',
         green: 'Zelený', orange: 'Oranžový', purple: 'Fialový'
@@ -1014,7 +1028,20 @@ const game = {
                 item.style.border = '1px solid #30363d';
                 item.style.borderRadius = '10px';
                 item.style.background = count >= 10 ? '#123524' : '#161b22';
-                item.innerHTML = `<strong>${label}</strong><br><span style="color: ${count >= 10 ? '#7ee787' : '#9fb3c8'};">${count} / 10</span>`;
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '10px';
+
+                const icon = this.renderIcon('icon-upgrade', this.rocketPartImages[key], 32);
+                item.innerHTML = `
+                    <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #0003; border-radius: 5px;">
+                        ${icon}
+                    </div>
+                    <div>
+                        <strong>${label}</strong><br>
+                        <span style="color: ${count >= 10 ? '#7ee787' : '#9fb3c8'};">${count} / 10</span>
+                    </div>
+                `;
                 partsList.appendChild(item);
             });
         }
