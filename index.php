@@ -261,21 +261,46 @@ session_start();
                     Experiment&aacute;ln&iacute; d&iacute;lna pro kompletaci raketov&yacute;ch sou&#269;&aacute;stek. Ka&#382;dou &#269;&aacute;st lze vyrobit maxim&aacute;ln&#283; 10x.
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
-                    <div style="flex: 1 1 260px;">
-                        <p class="lvl">&Uacute;rove&#328; <span id="rocket-workshop-lvl">0</span></p>
-                        <p id="rocket-workshop-status-text" style="margin: 8px 0 12px; color: #d7e2f0;">D&iacute;lna je p&#345;ipravena.</p>
-                        <p id="rocket-workshop-timer-wrap" class="hidden" style="font-size: 0.9rem; margin: 0 0 12px; color: #00d2ff;">
-                            Dokon&#269;en&iacute; za: <strong><span id="rocket-workshop-timer">00:00:00</span></strong>
-                        </p>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button id="rocket-workshop-start-btn" onclick="game.startRocketWorkshopProduction()" style="width: auto; background: #ff7043;">
-                                Spustit v&yacute;robu (10000 zkumavek)
-                            </button>
-                            <button id="rocket-workshop-collect-btn" onclick="game.collectRocketWorkshopProduct()" class="hidden" style="width: auto; background: #28a745;">
-                                Vyzvednout v&yacute;tvor
+                    <div style="flex: 1 1 300px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <p class="lvl" style="margin: 0;">&Uacute;rove&#328; <span id="rocket-workshop-lvl">0</span></p>
+                            <button id="rocket-workshop-upgrade-btn" onclick="game.upgradeRocketWorkshop()" class="hidden" style="width: auto; background: #007bff; padding: 5px 15px; font-size: 0.8rem;">
+                                Vylep&scaron;it d&iacute;lnu (1M Fe)
                             </button>
                         </div>
-                        <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745;">
+
+                        <!-- Slot 1: Běžná -->
+                        <div class="workshop-slot card" style="padding: 15px; margin-bottom: 15px; border-color: #ff704333;">
+                            <p style="margin: 0 0 10px; font-weight: bold; color: #ff7043;">B&#283;&#382;n&aacute; v&yacute;roba (8h)</p>
+                            <p id="ws-slot1-status" style="font-size: 0.85rem; margin-bottom: 10px; color: #888;">P&#345;ipraveno</p>
+                            <div id="ws-slot1-timer-wrap" class="hidden" style="margin-bottom: 10px;">
+                                <div class="progress-bg" style="height: 6px; margin-bottom: 5px;">
+                                    <div id="ws-slot1-progress" class="progress-bar" style="background: #ff7043; width: 0%;"></div>
+                                </div>
+                                <p style="font-size: 0.8rem; color: #00d2ff; margin: 0;">Zb&yacute;v&aacute;: <span id="ws-slot1-timer">00:00:00</span></p>
+                            </div>
+                            <button id="ws-slot1-start-btn" onclick="game.startRocketWorkshopProduction(1)" style="background: #ff7043; font-size: 0.85rem;">Spustit (10k zkum.)</button>
+                            <button id="ws-slot1-collect-btn" onclick="game.collectRocketWorkshopProduct(1)" class="hidden" style="background: #28a745; font-size: 0.85rem;">Vyzvednout (1 ks)</button>
+                        </div>
+
+                        <!-- Slot 2: Těžká -->
+                        <div id="ws-slot2-container" class="workshop-slot card hidden" style="padding: 15px; border-color: #e64a1933;">
+                            <p style="margin: 0 0 10px; font-weight: bold; color: #e64a19;">T&#283;&#382;k&aacute; v&yacute;roba (16h)</p>
+                            <p id="ws-slot2-status" style="font-size: 0.85rem; margin-bottom: 10px; color: #888;">P&#345;ipraveno</p>
+                            <div id="ws-slot2-timer-wrap" class="hidden" style="margin-bottom: 10px;">
+                                <div class="progress-bg" style="height: 6px; margin-bottom: 5px;">
+                                    <div id="ws-slot2-progress" class="progress-bar" style="background: #e64a19; width: 0%;"></div>
+                                </div>
+                                <p style="font-size: 0.8rem; color: #00d2ff; margin: 0;">Zb&yacute;v&aacute;: <span id="ws-slot2-timer">00:00:00</span></p>
+                            </div>
+                            <button id="ws-slot2-start-btn" onclick="game.startRocketWorkshopProduction(2)" style="background: #e64a19; font-size: 0.85rem;">Spustit (20k zkum.)</button>
+                            <button id="ws-slot2-collect-btn" onclick="game.collectRocketWorkshopProduct(2)" class="hidden" style="background: #28a745; font-size: 0.85rem;">Vyzvednout (2 ks)</button>
+                        </div>
+
+                        <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745; font-size: 0.85rem;">
+                            V&#353;echny druhy sou&#269;&aacute;stek u&#382; m&aacute;&scaron; vyroben&eacute; 10x.
+                        </p>
+                    </div>                        <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745;">
                             V&#353;echny druhy sou&#269;&aacute;stek u&#382; m&aacute;&scaron; vyroben&eacute; 10x.
                         </p>
                     </div>
@@ -549,6 +574,18 @@ session_start();
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
         v2026.04.14.1530
     </footer>
+
+    <!-- Workshop Item Modal -->
+    <div id="workshop-modal" class="modal hidden">
+        <div class="modal-content card">
+            <h3 id="modal-title">Nový díl získán!</h3>
+            <div id="modal-image-container" style="margin: 20px 0; text-align: center;">
+                <!-- Image will be injected here -->
+            </div>
+            <p id="modal-text" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 25px;"></p>
+            <button onclick="document.getElementById('workshop-modal').classList.add('hidden')" style="background: #28a745;">Skvělé!</button>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

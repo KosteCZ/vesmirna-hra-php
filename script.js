@@ -893,14 +893,51 @@ const game = {
         await this.submitAction('api.php?action=research_rocket_workshop');
     },
 
-    async startRocketWorkshopProduction() {
-        await this.submitAction('api.php?action=start_rocket_workshop_production');
+    async upgradeRocketWorkshop() {
+        if (this.displayIron < 1000000) return alert("Nedostatek železa (1 000 000 Fe)!");
+        await this.submitAction('api.php?action=upgrade_rocket_workshop');
     },
 
-    async collectRocketWorkshopProduct() {
-        const data = await this.submitAction('api.php?action=collect_rocket_workshop_product');
+    async startRocketWorkshopProduction(mode = 1) {
+        const formData = new FormData();
+        formData.append('mode', mode);
+        await this.submitAction('api.php?action=start_rocket_workshop_production', formData);
+    },
+
+    async collectRocketWorkshopProduct(slot = 1) {
+        const formData = new FormData();
+        formData.append('slot', slot);
+        const data = await this.submitAction('api.php?action=collect_rocket_workshop_product', formData);
         if (data && data.part_label) {
-            alert(`Z\u00edskal jsi: ${data.part_label}`);
+            const modal = document.getElementById('workshop-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalText = document.getElementById('modal-text');
+            const modalImgContainer = document.getElementById('modal-image-container');
+            
+            const isMultiple = Array.isArray(data.parts) && data.parts.length > 1;
+            modalTitle.innerText = isMultiple ? 'Nové díly získány!' : 'Nový díl získán!';
+            modalText.innerText = data.part_label;
+            
+            modalImgContainer.innerHTML = '';
+            modalImgContainer.style.display = 'flex';
+            modalImgContainer.style.justifyContent = 'center';
+            modalImgContainer.style.gap = '15px';
+            modalImgContainer.style.flexWrap = 'wrap';
+
+            const partsToShow = Array.isArray(data.parts) ? data.parts : [data.part_key];
+            
+            partsToShow.forEach(pName => {
+                // Find key by label
+                const imageKey = Object.keys(this.rocketPartNames).find(k => this.rocketPartNames[k] === pName) || pName;
+                const imgPath = this.rocketPartImages[imageKey] || 'workshop-items/unknown.png';
+                const img = document.createElement('img');
+                img.src = `resources/${imgPath}`;
+                img.alt = pName;
+                img.style.maxWidth = isMultiple ? '100px' : '150px';
+                modalImgContainer.appendChild(img);
+            });
+            
+            modal.classList.remove('hidden');
         }
     },
 
@@ -1007,17 +1044,14 @@ const game = {
         const inventory = this.planet.rocket_parts || {};
         const total = Object.values(inventory).reduce((sum, value) => sum + Number(value || 0), 0);
         const allCompleted = Boolean(this.planet.rocket_parts_all_completed);
-        const status = this.planet.rocket_workshop_status || 'idle';
-        const startBtn = document.getElementById('rocket-workshop-start-btn');
-        const collectBtn = document.getElementById('rocket-workshop-collect-btn');
-        const timerWrap = document.getElementById('rocket-workshop-timer-wrap');
-        const timerEl = document.getElementById('rocket-workshop-timer');
-        const statusEl = document.getElementById('rocket-workshop-status-text');
-        const finishedEl = document.getElementById('rocket-workshop-finished-note');
-        const partsList = document.getElementById('rocket-parts-list');
-
-        document.getElementById('rocket-workshop-lvl').innerText = this.planet.rocket_workshop_level || 1;
+        const level = this.planet.rocket_workshop_level || 1;
+        
+        document.getElementById('rocket-workshop-lvl').innerText = level;
         document.getElementById('rocket-parts-total').innerText = total;
+
+        const upgradeBtn = document.getElementById('rocket-workshop-upgrade-btn');
+        const partsList = document.getElementById('rocket-parts-list');
+        const finishedEl = document.getElementById('rocket-workshop-finished-note');
 
         if (partsList) {
             partsList.innerHTML = '';
@@ -1047,47 +1081,77 @@ const game = {
         }
 
         finishedEl.classList.toggle('hidden', !allCompleted);
-        collectBtn.classList.toggle('hidden', status !== 'ready');
-        startBtn.classList.toggle('hidden', status === 'ready');
+        
+        // Upgrade button logic: only show at level 1 and not producing in Slot 1 (to keep it simple)
+        const isSlot1Idle = (this.planet.rocket_workshop_status || 'idle') === 'idle';
+        upgradeBtn.classList.toggle('hidden', level >= 2 || !isSlot1Idle);
+        upgradeBtn.disabled = this.displayIron < 1000000;
 
-        if (allCompleted) {
-            startBtn.disabled = true;
-            statusEl.innerText = 'D\u00edlna splnila cel\u00fd program. M\u00e1\u0161 v\u0161echny sou\u010d\u00e1stky 10x.';
+        // --- SLOT 1 (Běžná) ---
+        this.updateWorkshopSlot(1, {
+            status: this.planet.rocket_workshop_status,
+            readyAt: this.planet.rocket_workshop_ready_at,
+            duration: 28800,
+            cost: 10000,
+            unlocked: true,
+            allCompleted: allCompleted
+        });
+
+        // --- SLOT 2 (Těžká) ---
+        this.updateWorkshopSlot(2, {
+            status: this.planet.rocket_workshop_2_status,
+            readyAt: this.planet.rocket_workshop_2_ready_at,
+            duration: 57600,
+            cost: 20000,
+            unlocked: level >= 2,
+            allCompleted: allCompleted
+        });
+    },
+
+    updateWorkshopSlot(id, data) {
+        const container = document.getElementById(`ws-slot${id}-container`);
+        if (container) container.classList.toggle('hidden', !data.unlocked);
+        
+        const statusEl = document.getElementById(`ws-slot${id}-status`);
+        const timerWrap = document.getElementById(`ws-slot${id}-timer-wrap`);
+        const timerEl = document.getElementById(`ws-slot${id}-timer`);
+        const progressEl = document.getElementById(`ws-slot${id}-progress`);
+        const startBtn = document.getElementById(`ws-slot${id}-start-btn`);
+        const collectBtn = document.getElementById(`ws-slot${id}-collect-btn`);
+
+        if (data.status === 'ready') {
+            statusEl.innerText = 'Hotovo! Můžeš vyzvednout.';
+            statusEl.style.color = '#28a745';
             timerWrap.classList.add('hidden');
-            return;
-        }
-
-        if (status === 'producing' && this.planet.rocket_workshop_ready_at) {
-            const readyAt = new Date(this.planet.rocket_workshop_ready_at.replace(' ', 'T') + 'Z');
-            const remainingSeconds = (readyAt.getTime() - Date.now()) / 1000;
-            if (remainingSeconds <= 0) {
-                if (!this.refreshPromise) {
-                    this.refreshDashboard();
-                }
-                statusEl.innerText = 'V\u00fdroba se dokon\u010duje...';
-                startBtn.disabled = true;
+            startBtn.classList.add('hidden');
+            collectBtn.classList.remove('hidden');
+        } else if (data.status === 'producing' && data.readyAt) {
+            const readyAt = new Date(data.readyAt.replace(' ', 'T') + 'Z');
+            const remaining = (readyAt.getTime() - Date.now()) / 1000;
+            
+            if (remaining <= 0) {
+                statusEl.innerText = 'Dokončování...';
+                if (!this.refreshPromise) this.refreshDashboard();
+                startBtn.classList.add('hidden');
+                collectBtn.classList.add('hidden');
+            } else {
+                statusEl.innerText = 'Probíhá výroba...';
+                statusEl.style.color = '#888';
                 timerWrap.classList.remove('hidden');
-                timerEl.innerText = '00:00:00';
-                return;
+                timerEl.innerText = this.formatDuration(remaining);
+                const percent = Math.min(100, ((data.duration - remaining) / data.duration) * 100);
+                progressEl.style.width = `${percent}%`;
+                startBtn.classList.add('hidden');
+                collectBtn.classList.add('hidden');
             }
-
-            statusEl.innerText = 'V\u00fdroba prob\u00edh\u00e1. Po dokon\u010den\u00ed si m\u016f\u017ee\u0161 sou\u010d\u00e1stku vyzvednout.';
-            startBtn.disabled = true;
-            timerWrap.classList.remove('hidden');
-            timerEl.innerText = this.formatDuration(remainingSeconds);
-            return;
+        } else {
+            statusEl.innerText = 'Připraveno';
+            statusEl.style.color = '#888';
+            timerWrap.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            startBtn.disabled = this.displayTubes < data.cost || data.allCompleted;
+            collectBtn.classList.add('hidden');
         }
-
-        timerWrap.classList.add('hidden');
-
-        if (status === 'ready') {
-            statusEl.innerText = 'V\u00fdroba je hotov\u00e1. \u010cek\u00e1 na vyzvednut\u00ed.';
-            collectBtn.disabled = false;
-            return;
-        }
-
-        statusEl.innerText = 'D\u00edlna je p\u0159ipravena na dal\u0161\u00ed v\u00fdrobn\u00ed cyklus.';
-        startBtn.disabled = this.displayTubes < 10000;
     },
 
     updateAlienUI() {

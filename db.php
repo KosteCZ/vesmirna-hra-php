@@ -94,8 +94,12 @@ $columnsToAdd = [
     'research_rocket_workshop' => "INTEGER DEFAULT 0",
     'rocket_workshop_level' => "INTEGER DEFAULT 0",
     'rocket_workshop_status' => "TEXT DEFAULT 'idle'",
+    'rocket_workshop_mode' => "INTEGER DEFAULT 1",
     'rocket_workshop_started_at' => "DATETIME",
     'rocket_workshop_ready_at' => "DATETIME",
+    'rocket_workshop_2_status' => "TEXT DEFAULT 'idle'",
+    'rocket_workshop_2_started_at' => "DATETIME",
+    'rocket_workshop_2_ready_at' => "DATETIME",
     'rocket_parts' => "TEXT DEFAULT ''"
 ];
 
@@ -148,6 +152,17 @@ function safePlanetWrite(PDO $db, string $sql, array $params): bool {
 
         throw $e;
     }
+}
+
+/**
+ * Calculates the number of seconds until a vehicle reaches a certain damage threshold.
+ * Uses the formula: totalDamage = (seconds * (baseRate + seconds * acceleration)) / armorFactor
+ */
+function calculateSafeTime($targetDamage, $baseRate, $acceleration, $armorFactor) {
+    // Formula for seconds: ( -baseRate + sqrt(baseRate^2 + 4 * acceleration * targetDamage * armorFactor) ) / (2 * acceleration)
+    $inner = pow($baseRate, 2) + 4 * $acceleration * $targetDamage * $armorFactor;
+    if ($inner < 0) return 0;
+    return (-$baseRate + sqrt($inner)) / (2 * $acceleration);
 }
 
 function getRocketPartDefinitions(): array {
@@ -310,6 +325,27 @@ function getPlanetData($userId, $db) {
             $armorFactor = pow($vehicleLevel, 1.2);
             $totalDamage = ($damageSeconds * ($baseDamageRate + ($damageSeconds * $acceleration))) / $armorFactor;
 
+            // Auto-Recall Logic (Offline)
+            $hasAutoRecall = $planet['research_auto_recall'] ?? 0;
+            if ($hasAutoRecall && $vehicleStatus === 'exploring' && $totalDamage >= 10) {
+                // Vehicle should have recalled at 90 HP (10 damage)
+                $safeSeconds = calculateSafeTime(10, $baseDamageRate, $acceleration, $armorFactor);
+                
+                $recallTime = clone $startTime;
+                $recallTime->modify('+' . round($safeSeconds) . ' seconds');
+                
+                // Recalculate based on safe recall
+                $damageSeconds = $safeSeconds; // Damage stops at recall point
+                $totalDamage = 10;
+                $vehicleStatus = 'returning';
+                
+                safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?", [
+                    $recallTime->format('Y-m-d H:i:s'),
+                    date('Y-m-d H:i:s'),
+                    $planet['id']
+                ]);
+            }
+
             $currentHP = max(0, 100 - $totalDamage);
             
             if ($currentHP <= 0) {
@@ -364,6 +400,27 @@ function getPlanetData($userId, $db) {
             $effectiveLevel = 1 + ($vehicle2Level - 1) * 2;
             $armorFactor = pow($effectiveLevel, 1.2);
             $totalDamage = ($damageSeconds * ($baseDamageRate + ($damageSeconds * $acceleration))) / $armorFactor;
+
+            // Auto-Recall Logic (Offline)
+            $hasAutoRecall = $planet['research_auto_recall'] ?? 0;
+            if ($hasAutoRecall && $vehicle2Status === 'exploring' && $totalDamage >= 10) {
+                // Vehicle should have recalled at 90 HP (10 damage)
+                $safeSeconds = calculateSafeTime(10, $baseDamageRate, $acceleration, $armorFactor);
+                
+                $recallTime = clone $startTime;
+                $recallTime->modify('+' . round($safeSeconds) . ' seconds');
+                
+                // Recalculate based on safe recall
+                $damageSeconds = $safeSeconds; // Damage stops at recall point
+                $totalDamage = 10;
+                $vehicle2Status = 'returning';
+                
+                safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?", [
+                    $recallTime->format('Y-m-d H:i:s'),
+                    date('Y-m-d H:i:s'),
+                    $planet['id']
+                ]);
+            }
 
             $currentHP = max(0, 100 - $totalDamage);
             
@@ -430,18 +487,25 @@ function getPlanetData($userId, $db) {
 
         // --- Rocket Workshop Offline Logic ---
         $rocketWorkshopStatus = $planet['rocket_workshop_status'] ?? 'idle';
-        $rocketWorkshopStartedAt = $planet['rocket_workshop_started_at'] ?? null;
+        $rocketWorkshopStatus = $planet['rocket_workshop_status'] ?? 'idle';
         $rocketWorkshopReadyAt = $planet['rocket_workshop_ready_at'] ?? null;
+        $rocketWorkshop2Status = $planet['rocket_workshop_2_status'] ?? 'idle';
+        $rocketWorkshop2ReadyAt = $planet['rocket_workshop_2_ready_at'] ?? null;
 
-        if (($planet['research_rocket_workshop'] ?? 0) && $rocketWorkshopStatus === 'producing' && $rocketWorkshopReadyAt) {
-            $readyAt = new DateTime($rocketWorkshopReadyAt);
-            if ($now >= $readyAt) {
-                $rocketWorkshopStatus = 'ready';
-                safePlanetWrite(
-                    $db,
-                    "UPDATE planets SET rocket_workshop_status = 'ready', last_updated = ? WHERE id = ?",
-                    [date('Y-m-d H:i:s'), $planet['id']]
-                );
+        if (($planet['research_rocket_workshop'] ?? 0)) {
+            // Slot 1 (Běžná)
+            if ($rocketWorkshopStatus === 'producing' && $rocketWorkshopReadyAt) {
+                if ($now >= new DateTime($rocketWorkshopReadyAt)) {
+                    $rocketWorkshopStatus = 'ready';
+                    safePlanetWrite($db, "UPDATE planets SET rocket_workshop_status = 'ready', last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
+                }
+            }
+            // Slot 2 (Těžká - unlocked at Lvl 2)
+            if (($planet['rocket_workshop_level'] ?? 1) >= 2 && $rocketWorkshop2Status === 'producing' && $rocketWorkshop2ReadyAt) {
+                if ($now >= new DateTime($rocketWorkshop2ReadyAt)) {
+                    $rocketWorkshop2Status = 'ready';
+                    safePlanetWrite($db, "UPDATE planets SET rocket_workshop_2_status = 'ready', last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
+                }
             }
         }
 
@@ -494,8 +558,11 @@ function getPlanetData($userId, $db) {
             'tube_storage_limit' => $tubeLimit,
             'rocket_workshop_level' => $planet['rocket_workshop_level'] ?? 0,
             'rocket_workshop_status' => $rocketWorkshopStatus,
-            'rocket_workshop_started_at' => $rocketWorkshopStartedAt,
+            'rocket_workshop_mode' => $planet['rocket_workshop_mode'] ?? 1,
+            'rocket_workshop_started_at' => $planet['rocket_workshop_started_at'] ?? null,
             'rocket_workshop_ready_at' => $rocketWorkshopReadyAt,
+            'rocket_workshop_2_status' => $rocketWorkshop2Status,
+            'rocket_workshop_2_ready_at' => $rocketWorkshop2ReadyAt,
             'rocket_parts' => $rocketParts,
             'rocket_parts_total' => array_sum($rocketParts),
             'rocket_parts_all_completed' => count($availableRocketParts) === 0,

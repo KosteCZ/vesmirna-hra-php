@@ -278,3 +278,40 @@ input {
 .loader { font-size: 1.2rem; color: #888; }
 .no-planet { text-align: center; padding: 50px; }
 .hidden { display: none !important; }
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: #1a1f29;
+  padding: 40px;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  border: 1px solid #4af2ff;
+  box-shadow: 0 0 30px rgba(74, 242, 255, 0.2);
+  animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+#modal-image-container img {
+  max-width: 150px;
+  filter: drop-shadow(0 0 10px rgba(74, 242, 255, 0.5));
+}
