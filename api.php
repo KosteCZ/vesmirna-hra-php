@@ -111,7 +111,7 @@ try {
         // Check if 2 previous mines are at level 50+
         $minesAt50 = 0;
         foreach (ALLOWED_COLORS as $color) {
-            if (($planet['mine_'.$color.'_lvl'] ?? 0) >= 50) {
+            if (($planet['alien_resources'][$color]['lvl'] ?? 0) >= 50) {
                 $minesAt50++;
             }
         }
