@@ -16,6 +16,9 @@ const ROCKET_WORKSHOP_PRODUCTION_COST = 10000;
 const ROCKET_WORKSHOP_PRODUCTION_DURATION = 28800; // 8h
 const ROCKET_WORKSHOP_PRODUCTION_COST_2 = 20000;
 const ROCKET_WORKSHOP_PRODUCTION_DURATION_2 = 57600; // 16h
+const ALIEN_SLOT_3_TUBES_COST = 25000;
+const ALIEN_SLOT_3_IRON_COST = 2000000;
+const ALIEN_SLOT_3_COPPER_COST = 25000;
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['error' => 'Neprihlasen!']);
@@ -94,6 +97,49 @@ try {
         }
     }
 
+    if ($action === 'research_alien_slot_3') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_rocket_workshop']) {
+            echo json_encode(['error' => 'Musíš mít hotovou Raketovou dílnu!']);
+            exit;
+        }
+        if ($planet['research_alien_slot_3']) {
+            echo json_encode(['error' => 'Výzkum již máš!']);
+            exit;
+        }
+
+        // Check if 2 previous mines are at level 50+
+        $minesAt50 = 0;
+        foreach (ALLOWED_COLORS as $color) {
+            if (($planet['mine_'.$color.'_lvl'] ?? 0) >= 50) {
+                $minesAt50++;
+            }
+        }
+
+        if ($minesAt50 < 2) {
+            echo json_encode(['error' => 'Musíš mít alespoň 2 předešlé doly na úrovni 50!']);
+            exit;
+        }
+
+        if ($planet['iron_amount'] >= ALIEN_SLOT_3_IRON_COST && 
+            $planet['res_copper'] >= ALIEN_SLOT_3_COPPER_COST && 
+            $planet['res_tubes'] >= ALIEN_SLOT_3_TUBES_COST) {
+            
+            $stmt = $db->prepare("UPDATE planets SET 
+                iron_amount = iron_amount - ?, 
+                res_copper = res_copper - ?, 
+                res_tubes = res_tubes - ?, 
+                research_alien_slot_3 = 1, 
+                last_updated = ? 
+                WHERE user_id = ?");
+            $stmt->execute([ALIEN_SLOT_3_IRON_COST, ALIEN_SLOT_3_COPPER_COST, ALIEN_SLOT_3_TUBES_COST, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek surovin pro výzkum!']);
+        }
+        exit;
+    }
+
     if ($action === 'research_color') {
         $color = $_POST['color'] ?? '';
         if (!in_array($color, ALLOWED_COLORS, true)) {
@@ -103,18 +149,20 @@ try {
 
         $planet = getPlanetData($userId, $db);
         $researched = $planet['researched_colors'] ?? [];
-        
-        if (count($researched) >= 2) {
-            echo json_encode(['error' => 'Již máš vyzkoumány 2 barvy!']);
+
+        $maxSlots = $planet['research_alien_slot_3'] ? 3 : 2;
+
+        if (count($researched) >= $maxSlots) {
+            echo json_encode(['error' => "Již máš vyzkoumáno maximum barev ({$maxSlots})!"]);
             exit;
-        }
-        
+        }        
         if (in_array($color, $researched)) {
             echo json_encode(['error' => 'Tato barva je již vyzkoumána!']);
             exit;
         }
         
-        $cost = (count($researched) === 0) ? 100 : 2000;
+        $count = count($researched);
+        $cost = ($count === 0) ? 100 : (($count === 1) ? 2000 : 10000);
         
         if ($planet['crystal_amount'] >= $cost) {
             $researched[] = $color;

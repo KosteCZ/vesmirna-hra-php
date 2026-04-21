@@ -300,9 +300,6 @@ session_start();
                         <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745; font-size: 0.85rem;">
                             V&#353;echny druhy sou&#269;&aacute;stek u&#382; m&aacute;&scaron; vyroben&eacute; 10x.
                         </p>
-                    </div>                        <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745;">
-                            V&#353;echny druhy sou&#269;&aacute;stek u&#382; m&aacute;&scaron; vyroben&eacute; 10x.
-                        </p>
                     </div>
 
                     <div style="flex: 1 1 320px;">
@@ -541,6 +538,15 @@ session_start();
                     <p style="font-size: 0.9rem; color: #888;">Za 15000 zkumavek odemkne a rovnou postav&iacute; novou budovu pro osmihodinovou v&yacute;robu raketov&yacute;ch sou&#269;&aacute;stek.</p>
                     <button id="research-rocket-workshop-btn" onclick="game.researchRocketWorkshop()" style="background: #ff7043; color: black; margin-top: 10px;">
                         Vyzkoumat a postavit (15000 zkumavek)
+                    </button>
+                </div>
+
+                <div id="research-alien-slot-3-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>3. d&#367;l na mimozemsk&eacute; materi&aacute;ly</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Umo&#382;n&iacute; t&#283;&#382;it t&#345;et&iacute; druh mimozemsk&eacute;ho materi&aacute;lu sou&#269;asn&#283;.</p>
+                    <p style="font-size: 0.8rem; color: #aaa;">Vy&#382;aduje: 2 st&aacute;vaj&iacute;c&iacute; doly Lvl 50+, Raketov&aacute; d&iacute;lna.</p>
+                    <button id="research-alien-slot-3-btn" onclick="game.researchAlienSlot3()" style="background: #bc4aff; color: black; margin-top: 10px;">
+                        Vyzkoumat (25k zkum., 2M Fe, 25k Cu)
                     </button>
                 </div>
             </section>

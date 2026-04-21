@@ -61,10 +61,36 @@ const game = {
     toggleGraphics() {
         this.useImages = document.getElementById('graphics-toggle').checked;
         localStorage.setItem('game_use_images', this.useImages);
+        this.refreshIcons();
         this.updateUI();
         this.updateAlienUI();
         this.updateResearchUI();
         this.updateRocketWorkshopUI();
+    },
+
+    refreshIcons() {
+        if (!this.planet) return;
+        const setIcon = (id, symbol, img, size = 24) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = this.renderIcon(symbol, img, size);
+        };
+
+        setIcon('icon-iron-container', 'icon-iron', 'iron.png');
+        setIcon('icon-energy-container', 'icon-energy', 'electricity.png');
+        setIcon('icon-crystal-container', 'icon-crystal', 'crystal.png');
+        setIcon('icon-copper-container', 'icon-copper', 'copper.png');
+        setIcon('icon-tubes-container', 'icon-tube', 'test-tube.png');
+
+        setIcon('icon-mine-container', 'icon-mine', 'mines-iron.png', 40);
+        setIcon('icon-solar-container', 'icon-solar', 'solar-power-plant.png', 40);
+        setIcon('icon-warehouse-container', 'icon-warehouse', 'storage-iron.png', 40);
+        setIcon('icon-mine-copper-container', 'icon-mine', 'mines-copper.png', 40);
+        setIcon('icon-warehouse-copper-container', 'icon-warehouse', 'storage-copper.png', 40);
+        setIcon('icon-lab-container', 'icon-lab', 'microscope.png', 40);
+        setIcon('icon-lab-storage-container', 'icon-warehouse', 'storage-test-tubes.png', 40);
+        
+        setIcon('icon-hangar-container', 'icon-vehicle', 'hangar.png', 28);
+        setIcon('icon-rocket-workshop-container', 'icon-lab', 'space-workshop.png', 28);
     },
 
     renderIcon(symbolId, imagePath = null, size = 24) {
@@ -137,11 +163,14 @@ const game = {
             
             // Sync alien resources
             this.displayAlien = {};
-            for (const color in this.planet.alien_resources) {
-                this.displayAlien[color] = this.planet.alien_resources[color].amount;
+            if (this.planet.alien_resources) {
+                for (const color in this.planet.alien_resources) {
+                    this.displayAlien[color] = this.planet.alien_resources[color].amount;
+                }
             }
             
             this.startLoop();
+            this.refreshIcons();
             this.updateUI();
             this.updateResearchUI();
             this.updateAlienUI();
@@ -163,7 +192,7 @@ const game = {
             researched.forEach(color => {
                 const colorCode = this.getColorCode(color);
                 const icon = this.renderIcon('icon-alien-res', `am-${color}.png`, 16);
-                iconsHtml += `<span style="color: ${colorCode}; margin-left: 5px; vertical-align: middle; display: inline-flex;">${icon}</span>`;
+                iconsHtml += `<span style="color: ${colorCode}; margin-left: 5px; display: inline-flex;">${icon}</span>`;
             });
 
             tr.innerHTML = `
@@ -360,32 +389,8 @@ const game = {
 
     updateUI() {
         if (!this.planet) return;
+        const researched = this.planet.researched_colors || [];
         
-        // Refresh static icons if needed (can be optimized to only run on toggle, but here for simplicity)
-        document.getElementById('icon-iron-container').innerHTML = this.renderIcon('icon-iron', 'iron.png');
-        document.getElementById('icon-energy-container').innerHTML = this.renderIcon('icon-energy', 'electricity.png');
-        document.getElementById('icon-crystal-container').innerHTML = this.renderIcon('icon-crystal', 'crystal.png');
-        document.getElementById('icon-copper-container').innerHTML = this.renderIcon('icon-copper', 'copper.png');
-        document.getElementById('icon-tubes-container').innerHTML = this.renderIcon('icon-tube', 'test-tube.png');
-
-        document.getElementById('icon-mine-container').innerHTML = this.renderIcon('icon-mine', 'mines-iron.png', 40);
-        document.getElementById('icon-solar-container').innerHTML = this.renderIcon('icon-solar', 'solar-power-plant.png', 40);
-        document.getElementById('icon-warehouse-container').innerHTML = this.renderIcon('icon-warehouse', 'storage-iron.png', 40);
-        document.getElementById('icon-mine-copper-container').innerHTML = this.renderIcon('icon-mine', 'mines-copper.png', 40);
-        document.getElementById('icon-warehouse-copper-container').innerHTML = this.renderIcon('icon-warehouse', 'storage-copper.png', 40);
-        document.getElementById('icon-lab-container').innerHTML = this.renderIcon('icon-lab', 'microscope.png', 40);
-        document.getElementById('icon-lab-storage-container').innerHTML = this.renderIcon('icon-warehouse', 'storage-test-tubes.png', 40);
-        
-        const hangarIconContainer = document.getElementById('icon-hangar-container');
-        if (hangarIconContainer) {
-            hangarIconContainer.innerHTML = this.renderIcon('icon-vehicle', 'hangar.png', 28);
-        }
-
-        const workshopIconContainer = document.getElementById('icon-rocket-workshop-container');
-        if (workshopIconContainer) {
-            workshopIconContainer.innerHTML = this.renderIcon('icon-lab', 'space-workshop.png', 28);
-        }
-
         const ironLimit = this.planet.iron_storage_limit;
         document.getElementById('display-iron').innerText = Math.floor(this.displayIron);
         document.getElementById('display-limit').innerText = ironLimit;
@@ -593,11 +598,36 @@ const game = {
             } else {
                 resRocketWorkshop.classList.add('hidden');
             }
+
+            // 5. 3rd Alien Slot
+            const resAlienSlot3 = document.getElementById('research-alien-slot-3-container');
+            if (this.planet.research_rocket_workshop && !this.planet.research_alien_slot_3) {
+                resAlienSlot3.classList.remove('hidden');
+                
+                // Check precondition: 2 mines at Lvl 50
+                let minesAt50 = 0;
+                researched.forEach(color => {
+                   if ((this.planet.alien_resources[color]?.lvl || 0) >= 50) minesAt50++;
+                });
+
+                const canAfford = this.displayTubes >= 25000 && this.displayIron >= 2000000 && this.displayCopper >= 25000;
+                const btn = document.getElementById('research-alien-slot-3-btn');
+                btn.disabled = !canAfford || minesAt50 < 2;
+                
+                if (minesAt50 < 2) {
+                    btn.innerText = 'Vyzkoumat (Vyžaduje 2 doly Lvl 50)';
+                } else {
+                    btn.innerText = 'Vyzkoumat (25k zkum., 2M Fe, 25k Cu)';
+                }
+            } else {
+                resAlienSlot3.classList.add('hidden');
+            }
         } else {
             document.getElementById('research-wh-copper-container').classList.add('hidden');
             document.getElementById('research-drone-3-container').classList.add('hidden');
             document.getElementById('research-auto-recall-container').classList.add('hidden');
             document.getElementById('research-rocket-workshop-container').classList.add('hidden');
+            document.getElementById('research-alien-slot-3-container').classList.add('hidden');
         }
 
         this.updateRocketWorkshopUI();
@@ -608,22 +638,26 @@ const game = {
         
         if (this.planet && this.planet.research_copper) {
             // Upgrade 1
-            if (!this.planet.research_drone_upgrade) {
-                droneResContainer.classList.remove('hidden');
-                const btn = document.getElementById('research-drone-btn');
-                if (btn) btn.disabled = this.displayCopper < 100;
-            } else {
-                droneResContainer.classList.add('hidden');
+            if (droneResContainer) {
+                if (!this.planet.research_drone_upgrade) {
+                    droneResContainer.classList.remove('hidden');
+                    const btn = document.getElementById('research-drone-btn');
+                    if (btn) btn.disabled = this.displayCopper < 100;
+                } else {
+                    droneResContainer.classList.add('hidden');
+                }
             }
 
             // Upgrade 2 (Requires 2 colors and Upgrade 1)
-            const researchedCount = (this.planet.researched_colors || []).length;
-            if (this.planet.research_drone_upgrade && !this.planet.research_drone_upgrade_2 && researchedCount >= 2) {
-                droneRes2Container.classList.remove('hidden');
-                const btn2 = document.getElementById('research-drone-2-btn');
-                if (btn2) btn2.disabled = this.displayCopper < 500;
-            } else {
-                droneRes2Container.classList.add('hidden');
+            if (droneRes2Container) {
+                const researchedCount = (this.planet.researched_colors || []).length;
+                if (this.planet.research_drone_upgrade && !this.planet.research_drone_upgrade_2 && researchedCount >= 2) {
+                    droneRes2Container.classList.remove('hidden');
+                    const btn2 = document.getElementById('research-drone-2-btn');
+                    if (btn2) btn2.disabled = this.displayCopper < 500;
+                } else {
+                    droneRes2Container.classList.add('hidden');
+                }
             }
         } else {
             if (droneResContainer) droneResContainer.classList.add('hidden');
@@ -893,6 +927,10 @@ const game = {
         await this.submitAction('api.php?action=research_rocket_workshop');
     },
 
+    async researchAlienSlot3() {
+        await this.submitAction('api.php?action=research_alien_slot_3');
+    },
+
     async upgradeRocketWorkshop() {
         if (this.displayIron < 1000000) return alert("Nedostatek železa (1 000 000 Fe)!");
         await this.submitAction('api.php?action=upgrade_rocket_workshop');
@@ -988,10 +1026,12 @@ const game = {
         const options = document.getElementById('color-options');
         
         const count = researched.length;
-        if (count >= 2) {
-            info.innerHTML = `<p style="color: #28a745;"><strong>Všechny výzkumné sloty (2/2) jsou obsazeny.</strong></p>`;
+        const maxSlots = this.planet.research_alien_slot_3 ? 3 : 2;
+
+        if (count >= maxSlots) {
+            info.innerHTML = `<p style="color: #28a745;"><strong>Všechny výzkumné sloty (${count}/${maxSlots}) jsou obsazeny.</strong></p>`;
         } else {
-            const cost = count === 0 ? 100 : 2000;
+            const cost = count === 0 ? 100 : (count === 1 ? 2000 : 10000);
             info.innerHTML = `<p>K dispozici máš slot č. <strong>${count + 1}</strong> za <strong>${cost} krystalů</strong>.</p>`;
         }
 
@@ -1005,10 +1045,10 @@ const game = {
             if (isResearched) {
                 btn.disabled = true;
                 btn.innerText += ' (Vyzkoumáno)';
-            } else if (count >= 2) {
+            } else if (count >= maxSlots) {
                 btn.disabled = true;
             } else {
-                const cost = count === 0 ? 100 : 2000;
+                const cost = count === 0 ? 100 : (count === 1 ? 2000 : 10000);
                 btn.onclick = () => this.researchColor(color);
                 if (this.displayCrystal < cost) btn.style.opacity = '0.5';
             }

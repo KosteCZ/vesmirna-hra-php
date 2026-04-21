@@ -100,6 +100,7 @@ $columnsToAdd = [
     'rocket_workshop_2_status' => "TEXT DEFAULT 'idle'",
     'rocket_workshop_2_started_at' => "DATETIME",
     'rocket_workshop_2_ready_at' => "DATETIME",
+    'research_alien_slot_3' => "INTEGER DEFAULT 0",
     'rocket_parts' => "TEXT DEFAULT ''"
 ];
 
@@ -472,21 +473,7 @@ function getPlanetData($userId, $db) {
             $droneStorage = min($droneLimit, $droneStorage);
         }
 
-        // --- Auto-Recall Logic (Offline) ---
-        $autoRecall = $planet['research_auto_recall'] ?? 0;
-        if ($autoRecall) {
-            if ($vehicleStatus === 'exploring' && $vehicleHP <= 90) {
-                $vehicleStatus = 'returning';
-                safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
-            }
-            if ($vehicle2Status === 'exploring' && $vehicle2HP <= 90) {
-                $vehicle2Status = 'returning';
-                safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
-            }
-        }
-
         // --- Rocket Workshop Offline Logic ---
-        $rocketWorkshopStatus = $planet['rocket_workshop_status'] ?? 'idle';
         $rocketWorkshopStatus = $planet['rocket_workshop_status'] ?? 'idle';
         $rocketWorkshopReadyAt = $planet['rocket_workshop_ready_at'] ?? null;
         $rocketWorkshop2Status = $planet['rocket_workshop_2_status'] ?? 'idle';
@@ -551,6 +538,7 @@ function getPlanetData($userId, $db) {
             'research_auto_recall' => $planet['research_auto_recall'] ?? 0,
             'research_advanced_lab' => $planet['research_advanced_lab'] ?? 0,
             'research_rocket_workshop' => $planet['research_rocket_workshop'] ?? 0,
+            'research_alien_slot_3' => $planet['research_alien_slot_3'] ?? 0,
             'lab_level' => $labLvl,
             'lab_storage_level' => $labStorageLvl,
             'res_tubes' => $newTubes,
