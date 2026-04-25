@@ -279,6 +279,12 @@ input {
 .no-planet { text-align: center; padding: 50px; }
 .hidden { display: none !important; }
 
+.hangar-view {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
 /* Modal Styles */
 .modal {
   position: fixed;

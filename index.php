@@ -48,6 +48,12 @@ session_start();
             <circle cx="12" cy="12" r="3" />
             <path d="M18 6l-4 4M6 18l4-4M6 6l4 4M18 18l-4-4" />
         </symbol>
+        <symbol id="icon-secret-mine" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+            <circle cx="12" cy="12" r="3" />
+        </symbol>
         <symbol id="icon-copper" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="9" />
             <path d="M12 8v8M8 12h8" />
@@ -137,6 +143,7 @@ session_start();
                     <div class="res-data">
                         <span class="label">Krystaly</span>
                         <span class="value" id="display-crystal">0</span>
+                        <span class="prod hidden" id="crystal-prod-container">+<span id="crystal-prod">0</span>/min</span>
                     </div>
                 </div>
 
@@ -206,7 +213,6 @@ session_start();
                 </div>
             </section>
 
-            <!-- Copper Buildings Section -->
             <section id="copper-buildings" class="buildings hidden" style="margin-top: 20px;">
                 <div class="building-card" style="border-color: #b87333;">
                     <div id="icon-mine-copper-container"><svg width="40" height="40" style="color: #b87333;"><use href="#icon-mine"/></svg></div>
@@ -248,6 +254,17 @@ session_start();
                     <p class="desc">Zvětšuje prostor pro hotové zkumavky.</p>
                     <button onclick="game.upgradeLabStorage()" id="upgrade-lab-storage-btn">
                         Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="lab-storage-upgrade-cost"></span>
+                    </button>
+                </div>
+
+                <!-- Secret Crystal Mine -->
+                <div id="secret-mine-building" class="building-card hidden" style="border-color: #38bdf8;">
+                    <div id="icon-secret-mine-container"></div>
+                    <h3>Skrytý důl na krystaly</h3>
+                    <p class="lvl">Úroveň <span id="secret-mine-lvl">0</span></p>
+                    <p class="desc">Těží krystaly z hlubin. Produkce závisí na počtu hráčů, kteří důl objevili. <br><small id="secret-mine-discovered-count-label" style="color: #38bdf8;"></small></p>
+                    <button onclick="game.upgradeSecretMine()" id="upgrade-secret-mine-btn">
+                        Vylepšit <svg width="14" height="14"><use href="#icon-upgrade"/></svg> <span id="secret-mine-upgrade-cost"></span>
                     </button>
                 </div>
             </section>
@@ -397,7 +414,7 @@ session_start();
                         </div>
                     </div>
                     
-                    <div id="vehicle2-view" class="hidden" style="display: flex; gap: 20px; align-items: center;">
+                    <div id="vehicle2-view" class="hangar-view hidden">
                         <div style="flex: 1; text-align: center;">
                             <div id="vehicle2-icon-container">
                                 <svg width="50" height="50" style="color: #b87333;"><use href="#icon-vehicle"/></svg>
@@ -549,6 +566,14 @@ session_start();
                         Vyzkoumat (25k zkum., 2M Fe, 25k Cu)
                     </button>
                 </div>
+
+                <div id="research-secret-mine-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                    <p><strong>Skrytý důl na krystaly</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Odemkne stavbu speciálního dolu na krystaly. Produkce roste s počtem velitelů, kteří jej objevili. <br><small id="secret-mine-note-text" style="color: #38bdf8;"></small></p>
+                    <button id="research-secret-mine-btn" onclick="game.researchSecretMine()" style="background: #00d2ff; color: black; margin-top: 10px;">
+                        Vyzkoumat (30 000 Zkumavek)
+                    </button>
+                </div>
             </section>
 
             <!-- Leaderboard Section -->
@@ -578,7 +603,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.04.21.0900
+        v2026.04.25.2230
     </footer>
 
     <!-- Workshop Item Modal -->

@@ -88,6 +88,7 @@ const game = {
         setIcon('icon-warehouse-copper-container', 'icon-warehouse', 'storage-copper.png', 40);
         setIcon('icon-lab-container', 'icon-lab', 'microscope.png', 40);
         setIcon('icon-lab-storage-container', 'icon-warehouse', 'storage-test-tubes.png', 40);
+        setIcon('icon-secret-mine-container', 'icon-secret-mine', 'mines-crystal.png', 40);
         
         setIcon('icon-hangar-container', 'icon-vehicle', 'hangar.png', 28);
         setIcon('icon-rocket-workshop-container', 'icon-lab', 'space-workshop.png', 28);
@@ -257,6 +258,11 @@ const game = {
                 this.displayIron += (ironProd / 10) * prodFactor;
             }
 
+            // Secret Crystal Mine Production
+            if (this.planet.research_secret_crystal_mine && this.planet.secret_crystal_mine_level > 0) {
+                this.displayCrystal += (this.planet.secret_mine_production / 10) * prodFactor;
+            }
+
             // Copper Production
             if (this.planet.research_copper && this.displayCopper < this.planet.copper_storage_limit) {
                 this.displayCopper += (this.planet.copper_production / 10) * prodFactor;
@@ -397,6 +403,17 @@ const game = {
         document.getElementById('display-energy').innerText = Math.floor(this.displayEnergy);
         document.getElementById('display-crystal').innerText = Math.floor(this.displayCrystal);
         
+        // Crystal Production Speed (Secret Mine)
+        const crystalProdContainer = document.getElementById('crystal-prod-container');
+        if (this.planet.research_secret_crystal_mine && this.planet.secret_crystal_mine_level > 0) {
+            crystalProdContainer.classList.remove('hidden');
+            // Show per minute (secret_mine_production is per second)
+            const minProd = (this.planet.secret_mine_production * 60).toFixed(1);
+            document.getElementById('crystal-prod').innerText = minProd;
+        } else {
+            crystalProdContainer.classList.add('hidden');
+        }
+
         document.getElementById('iron-prod').innerText = this.planet.iron_production.toFixed(2);
         document.getElementById('energy-prod').innerText = this.planet.energy_production.toFixed(2);
         
@@ -622,12 +639,38 @@ const game = {
             } else {
                 resAlienSlot3.classList.add('hidden');
             }
+
+            // 6. Secret Crystal Mine Research
+            const resSecretMine = document.getElementById('research-secret-mine-container');
+            if (this.planet.research_alien_slot_3 && !this.planet.research_secret_crystal_mine) {
+                resSecretMine.classList.remove('hidden');
+                document.getElementById('research-secret-mine-btn').disabled = this.displayTubes < 30000;
+                document.getElementById('secret-mine-note-text').innerText = `Již objeveno ${this.planet.secret_mine_discovered_count} veliteli.`;
+            } else {
+                resSecretMine.classList.add('hidden');
+            }
         } else {
             document.getElementById('research-wh-copper-container').classList.add('hidden');
             document.getElementById('research-drone-3-container').classList.add('hidden');
             document.getElementById('research-auto-recall-container').classList.add('hidden');
             document.getElementById('research-rocket-workshop-container').classList.add('hidden');
             document.getElementById('research-alien-slot-3-container').classList.add('hidden');
+            document.getElementById('research-secret-mine-container').classList.add('hidden');
+        }
+
+        // Secret Crystal Mine Building UI
+        const secretMineBld = document.getElementById('secret-mine-building');
+        if (this.planet && this.planet.research_secret_crystal_mine) {
+            secretMineBld.classList.remove('hidden');
+            const lvl = this.planet.secret_crystal_mine_level || 0;
+            document.getElementById('secret-mine-lvl').innerText = lvl;
+            
+            const cost = 1000000 + (lvl * 50000);
+            document.getElementById('secret-mine-upgrade-cost').innerText = `${(cost / 1000000).toFixed(2)}M Fe`;
+            document.getElementById('upgrade-secret-mine-btn').disabled = this.displayIron < cost;
+            document.getElementById('secret-mine-discovered-count-label').innerText = `Objeveno: ${this.planet.secret_mine_discovered_count} veliteli. Bonus: 2^(${this.planet.secret_mine_discovered_count}+1)`;
+        } else {
+            secretMineBld.classList.add('hidden');
         }
 
         this.updateRocketWorkshopUI();
@@ -929,6 +972,14 @@ const game = {
 
     async researchAlienSlot3() {
         await this.submitAction('api.php?action=research_alien_slot_3');
+    },
+
+    async researchSecretMine() {
+        await this.submitAction('api.php?action=research_secret_crystal_mine');
+    },
+
+    async upgradeSecretMine() {
+        await this.submitAction('api.php?action=upgrade_secret_crystal_mine');
     },
 
     async upgradeRocketWorkshop() {
@@ -1321,3 +1372,4 @@ setInterval(() => {
     game.fetchLeaderboard();
     game.fetchGlobalStats();
 }, 5000); // Update every 5s
+;

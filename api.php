@@ -19,18 +19,16 @@ const ROCKET_WORKSHOP_PRODUCTION_DURATION_2 = 57600; // 16h
 const ALIEN_SLOT_3_TUBES_COST = 25000;
 const ALIEN_SLOT_3_IRON_COST = 2000000;
 const ALIEN_SLOT_3_COPPER_COST = 25000;
+const SECRET_MINE_RESEARCH_COST_TUBES = 30000;
+const SECRET_MINE_UPGRADE_BASE_IRON = 1000000;
+const SECRET_MINE_UPGRADE_STEP_IRON = 50000;
 
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['error' => 'Neprihlasen!']);
+    echo json_encode(['error' => 'Nepřihlášen!']);
     exit;
 }
 
 try {
-    if (!isset($_SESSION['user_id'])) {
-        echo json_encode(['error' => 'Nepřihlášen!']);
-        exit;
-    }
-
     $userId = $_SESSION['user_id'];
     $action = $_GET['action'] ?? '';
 
@@ -95,6 +93,59 @@ try {
         } else {
             echo json_encode(['error' => 'Nedostatek železa!']);
         }
+    }
+
+    if ($action === 'research_secret_crystal_mine') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_alien_slot_3']) {
+            echo json_encode(['error' => 'Musíš mít nejdříve vyzkoumaný 3. slot pro alien doly!']);
+            exit;
+        }
+        if ($planet['research_secret_crystal_mine']) {
+            echo json_encode(['error' => 'Výzkum již máš!']);
+            exit;
+        }
+
+        if ($planet['res_tubes'] >= SECRET_MINE_RESEARCH_COST_TUBES) {
+            $stmt = $db->prepare("UPDATE planets SET 
+                res_tubes = res_tubes - ?, 
+                research_secret_crystal_mine = 1, 
+                secret_crystal_mine_level = 1,
+                last_updated = ? 
+                WHERE user_id = ?");
+            $stmt->execute([SECRET_MINE_RESEARCH_COST_TUBES, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => 'Nedostatek zkumavek pro výzkum!']);
+        }
+        exit;
+    }
+
+    if ($action === 'upgrade_secret_crystal_mine') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_secret_crystal_mine']) {
+            echo json_encode(['error' => 'Výzkum není hotov!']);
+            exit;
+        }
+        
+        $currentLevel = $planet['secret_crystal_mine_level'];
+        // Cost: 1,000,000 + (level * 100,000). level 1->2 costs 1.1M? 
+        // User said: starting at 1000000 and each other upgrade will cost 100000 more iron
+        // So Lvl 1 -> 2 costs 1,100,000.
+        $cost = SECRET_MINE_UPGRADE_BASE_IRON + ($currentLevel * SECRET_MINE_UPGRADE_STEP_IRON);
+        
+        if ($planet['iron_amount'] >= $cost) {
+            $stmt = $db->prepare("UPDATE planets SET 
+                iron_amount = iron_amount - ?, 
+                secret_crystal_mine_level = secret_crystal_mine_level + 1, 
+                last_updated = ? 
+                WHERE user_id = ?");
+            $stmt->execute([$cost, date('Y-m-d H:i:s'), $userId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['error' => "Nedostatek železa ({$cost})!"]);
+        }
+        exit;
     }
 
     if ($action === 'research_alien_slot_3') {

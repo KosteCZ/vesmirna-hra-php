@@ -3,9 +3,9 @@
 
 // Disable error reporting to prevent warnings from breaking JSON output
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Production: hide errors, they will be in logs or handled by try-catch
+ini_set('display_errors', 0);
 
-// Set timezone to UTC (industry standard for backends)
+// Set timezone to UTC
 date_default_timezone_set('UTC');
 
 $dbPath = __DIR__ . '/game.sqlite';
@@ -101,6 +101,8 @@ $columnsToAdd = [
     'rocket_workshop_2_started_at' => "DATETIME",
     'rocket_workshop_2_ready_at' => "DATETIME",
     'research_alien_slot_3' => "INTEGER DEFAULT 0",
+    'research_secret_crystal_mine' => "INTEGER DEFAULT 0",
+    'secret_crystal_mine_level' => "INTEGER DEFAULT 0",
     'rocket_parts' => "TEXT DEFAULT ''"
 ];
 
@@ -112,7 +114,7 @@ if ($res) {
     }
 }
 
-// Special migration: Rename old 'ship' columns to 'vehicle' if they exist
+// Migration: Column renames and additions
 $renames = [
     'ship_level' => 'vehicle_level',
     'ship_hp' => 'vehicle_hp',
@@ -147,20 +149,12 @@ function safePlanetWrite(PDO $db, string $sql, array $params): bool {
         $stmt = $db->prepare($sql);
         return $stmt->execute($params);
     } catch (Throwable $e) {
-        if (isReadonlyDatabaseError($e)) {
-            return false;
-        }
-
+        if (isReadonlyDatabaseError($e)) return false;
         throw $e;
     }
 }
 
-/**
- * Calculates the number of seconds until a vehicle reaches a certain damage threshold.
- * Uses the formula: totalDamage = (seconds * (baseRate + seconds * acceleration)) / armorFactor
- */
 function calculateSafeTime($targetDamage, $baseRate, $acceleration, $armorFactor) {
-    // Formula for seconds: ( -baseRate + sqrt(baseRate^2 + 4 * acceleration * targetDamage * armorFactor) ) / (2 * acceleration)
     $inner = pow($baseRate, 2) + 4 * $acceleration * $targetDamage * $armorFactor;
     if ($inner < 0) return 0;
     return (-$baseRate + sqrt($inner)) / (2 * $acceleration);
@@ -168,16 +162,16 @@ function calculateSafeTime($targetDamage, $baseRate, $acceleration, $armorFactor
 
 function getRocketPartDefinitions(): array {
     return [
-        'rocket_tip' => "\u{0160}pi\u{010d}ka rakety",
+        'rocket_tip' => "Špička rakety",
         'rocket_body' => 'Trup rakety',
-        'fuel_tank' => "Palivov\u{00e9} n\u{00e1}dr\u{017e}e",
-        'jet_engine' => "Tryskov\u{00fd} motor",
+        'fuel_tank' => "Palivové nádrže",
+        'jet_engine' => "Tryskový motor",
         'satellite' => 'Satelit',
-        'solar_panel' => "Sol\u{00e1}rn\u{00ed} panel",
+        'solar_panel' => "Solární panel",
         'seat' => 'Sedadlo',
         'fuel_canister' => "Kanystr s palivem",
-        'electronics' => "Elektronick\u{00e9} za\u{0159}\u{00ed}zen\u{00ed}",
-        'tools' => "N\u{00e1}\u{0159}ad\u{00ed}"
+        'electronics' => "Elektronické zařízení",
+        'tools' => "Nářadí"
     ];
 }
 
@@ -186,87 +180,68 @@ function getDefaultRocketPartsInventory(): array {
     foreach (getRocketPartDefinitions() as $key => $_label) {
         $inventory[$key] = 0;
     }
-
     return $inventory;
 }
 
 function normalizeRocketPartsInventory($rawInventory): array {
     $inventory = getDefaultRocketPartsInventory();
-    if (!is_string($rawInventory) || $rawInventory === '') {
-        return $inventory;
-    }
-
+    if (!is_string($rawInventory) || $rawInventory === '') return $inventory;
     $decoded = json_decode($rawInventory, true);
-    if (!is_array($decoded)) {
-        return $inventory;
-    }
-
+    if (!is_array($decoded)) return $inventory;
     foreach ($inventory as $key => $defaultValue) {
         $value = $decoded[$key] ?? $defaultValue;
-        $inventory[$key] = max(0, min(10, (int) $value));
+        $inventory[$key] = max(0, min(10, (int)$value));
     }
-
     return $inventory;
 }
 
-/**
- * Get current planet data for a user
- */
 function getPlanetData($userId, $db) {
     try {
         $stmt = $db->prepare("SELECT p.*, u.player_name FROM planets p JOIN users u ON p.user_id = u.id WHERE p.user_id = ?");
         $stmt->execute([$userId]);
         $planet = $stmt->fetch(PDO::FETCH_ASSOC);
-        
         if (!$planet) return null;
-        
+
         $now = new DateTime();
-        $lastUpdateStr = $planet['last_updated'] ?? 'now';
-        $lastUpdate = new DateTime($lastUpdateStr);
+        $lastUpdate = new DateTime($planet['last_updated'] ?? 'now');
         $secondsElapsed = max(0, $now->getTimestamp() - $lastUpdate->getTimestamp());
-        
+
         $ironProd = ($planet['mine_level'] ?? 1) * 1;
         $energyProd = ($planet['solar_plant_level'] ?? 1) * 2;
         $ironLimit = ($planet['warehouse_level'] ?? 1) * 1000;
-        
-        // --- New Materials Production ---
+
         $colors = ['yellow', 'red', 'blue', 'green', 'orange', 'purple'];
         $newResData = [];
         $totalExtraEnergyNeeded = 0;
-        
         foreach ($colors as $color) {
             $lvl = $planet["mine_{$color}_lvl"] ?? 0;
-            $prod = $lvl * 0.02; // 50x slower than iron (reduced 10x from 0.2)
-            $newResData[$color] = [
-                'lvl' => $lvl,
-                'prod' => $prod,
-                'amount' => $planet["res_{$color}"] ?? 0
-            ];
-            $totalExtraEnergyNeeded += ($lvl * 0.3); // Each alien mine consumes energy
+            $prod = $lvl * 0.02;
+            $newResData[$color] = ['lvl' => $lvl, 'prod' => $prod, 'amount' => $planet["res_{$color}"] ?? 0];
+            $totalExtraEnergyNeeded += ($lvl * 0.3);
         }
-        
-        // --- Copper Production ---
+
         $copperLvl = $planet['mine_copper_lvl'] ?? 0;
-        $copperProd = $copperLvl * 0.1; // 10x slower than iron, 5x faster than alien materials
+        $copperProd = $copperLvl * 0.1;
         $copperLimit = ($planet['warehouse_copper_lvl'] ?? 0) * 1000 + 500;
         $totalExtraEnergyNeeded += ($copperLvl * 0.5);
 
-        // --- Advanced Lab: Test Tubes Production ---
         $labLvl = $planet['lab_level'] ?? 0;
         $labStorageLvl = $planet['lab_storage_level'] ?? 0;
-        $tubeProd = $labLvl * 0.05; // Base production rate
+        $tubeProd = $labLvl * 0.05;
         $tubeLimit = ($labStorageLvl > 0) ? ($labStorageLvl * 500) : 100;
-        $currentTubes = $planet['res_tubes'] ?? 0;
-        $rocketParts = normalizeRocketPartsInventory($planet['rocket_parts'] ?? '');
-        $availableRocketParts = [];
-        foreach ($rocketParts as $partKey => $partCount) {
-            if ($partCount < 10) {
-                $availableRocketParts[] = $partKey;
-            }
-        }
-        
-        if (($planet['research_advanced_lab'] ?? 0)) {
-            $totalExtraEnergyNeeded += ($labLvl * 1.5);
+        if (($planet['research_advanced_lab'] ?? 0)) $totalExtraEnergyNeeded += ($labLvl * 1.5);
+
+        // --- Secret Crystal Mine Production ---
+        $secretMineLvl = $planet['secret_crystal_mine_level'] ?? 0;
+        $secretMineProd = 0;
+        $totalDiscovered = 0;
+        $stmtCount = $db->query("SELECT COUNT(*) FROM planets WHERE research_secret_crystal_mine = 1");
+        if ($stmtCount) $totalDiscovered = (int)$stmtCount->fetchColumn();
+        if ($secretMineLvl > 0) {
+            // Base rate: 30 * 2 ^ discovered (Results in 60/h for 1st player, 120/h for 2nd, etc.)
+            $baseRatePerHour = 30 * pow(2, $totalDiscovered);
+            $secretMineProd = ($baseRatePerHour / 3600) * $secretMineLvl;
+            $totalExtraEnergyNeeded += ($secretMineLvl * 10);
         }
 
         $energyNeeded = ($ironProd * 0.5) + $totalExtraEnergyNeeded;
@@ -274,15 +249,12 @@ function getPlanetData($userId, $db) {
         $currentEnergy = $planet['energy_amount'] ?? 0;
         $currentCopper = $planet['res_copper'] ?? 0;
         $currentTubes = $planet['res_tubes'] ?? 0;
-        
+
         $productionFactor = 1.0;
         if ($energyProd < $energyNeeded) {
             $energyDiff = $energyNeeded - $energyProd;
             $secondsWithEnergy = ($energyDiff > 0) ? min($secondsElapsed, $currentEnergy / $energyDiff) : $secondsElapsed;
-            if ($secondsElapsed > 0) {
-                $productionFactor = ($secondsWithEnergy + (($secondsElapsed - $secondsWithEnergy) * 0.1)) / $secondsElapsed;
-            }
-            
+            if ($secondsElapsed > 0) $productionFactor = ($secondsWithEnergy + (($secondsElapsed - $secondsWithEnergy) * 0.1)) / $secondsElapsed;
             $newEnergy = $currentEnergy - ($secondsWithEnergy * $energyDiff) + (max(0, $secondsElapsed - $secondsWithEnergy) * $energyProd);
         } else {
             $newEnergy = $currentEnergy + ($secondsElapsed * ($energyProd - $energyNeeded));
@@ -292,296 +264,143 @@ function getPlanetData($userId, $db) {
         $newEnergy = max(0, $newEnergy);
         $newCopper = min($copperLimit, $currentCopper + ($secondsElapsed * $copperProd * $productionFactor));
         $newTubes = min($tubeLimit, $currentTubes + ($secondsElapsed * $tubeProd * $productionFactor));
+        $newCrystals = ($planet['crystal_amount'] ?? 0) + ($secondsElapsed * $secretMineProd * $productionFactor);
 
-        // Update alien resources based on production factor
-        $researchedStr = $planet['researched_colors'] ?? '';
-        $researchedArr = $researchedStr ? explode(',', $researchedStr) : [];
-        
         foreach ($colors as $color) {
             $newResData[$color]['amount'] += ($secondsElapsed * $newResData[$color]['prod'] * $productionFactor);
         }
-        
-        // --- Vehicle 1 Expedition Offline Logic ---
+
+        // Expedition & Rocket Workshop Logic
         $vehicleStatus = $planet['vehicle_status'] ?? 'idle';
         $vehicleHP = $planet['vehicle_hp'] ?? 100;
         $vehicleLevel = $planet['vehicle_level'] ?? 0;
-        $crystalAmount = $planet['crystal_amount'] ?? 0;
+        $crystalAmount = $newCrystals;
 
         if (($vehicleStatus === 'exploring' || $vehicleStatus === 'returning') && $vehicleLevel > 0) {
-            $startTimeStr = $planet['vehicle_start_time'] ?? 'now';
-            $startTime = new DateTime($startTimeStr);
+            $startTime = new DateTime($planet['vehicle_start_time'] ?? 'now');
             $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
             $damageSeconds = $secondsSinceStart;
-
             if ($vehicleStatus === 'returning') {
-                $recallTimeStr = $planet['vehicle_recall_time'] ?? 'now';
-                $recallTime = new DateTime($recallTimeStr);
+                $recallTime = new DateTime($planet['vehicle_recall_time'] ?? 'now');
                 $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
-                $missionCompleteAfter = $secondsToReturn * 2;
-                $damageSeconds = min($secondsSinceStart, $missionCompleteAfter);
+                $damageSeconds = min($secondsSinceStart, $secondsToReturn * 2);
             }
-            
-            $baseDamageRate = 0.1; 
-            $acceleration = 0.003;
-            $armorFactor = pow($vehicleLevel, 1.2);
+            $baseDamageRate = 0.1; $acceleration = 0.003; $armorFactor = pow($vehicleLevel, 1.2);
             $totalDamage = ($damageSeconds * ($baseDamageRate + ($damageSeconds * $acceleration))) / $armorFactor;
-
-            // Auto-Recall Logic (Offline)
-            $hasAutoRecall = $planet['research_auto_recall'] ?? 0;
-            if ($hasAutoRecall && $vehicleStatus === 'exploring' && $totalDamage >= 10) {
-                // Vehicle should have recalled at 90 HP (10 damage)
-                $safeSeconds = calculateSafeTime(10, $baseDamageRate, $acceleration, $armorFactor);
-                
-                $recallTime = clone $startTime;
-                $recallTime->modify('+' . round($safeSeconds) . ' seconds');
-                
-                // Recalculate based on safe recall
-                $damageSeconds = $safeSeconds; // Damage stops at recall point
-                $totalDamage = 10;
-                $vehicleStatus = 'returning';
-                
-                safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?", [
-                    $recallTime->format('Y-m-d H:i:s'),
-                    date('Y-m-d H:i:s'),
-                    $planet['id']
-                ]);
+            if (($planet['research_auto_recall'] ?? 0) && $vehicleStatus === 'exploring' && $totalDamage >= 10) {
+                $safeSecs = calculateSafeTime(10, $baseDamageRate, $acceleration, $armorFactor);
+                $recallTime = clone $startTime; $recallTime->modify('+' . round($safeSecs) . ' seconds');
+                $damageSeconds = $safeSecs; $totalDamage = 10; $vehicleStatus = 'returning';
+                safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'returning', vehicle_recall_time = ?, last_updated = ? WHERE id = ?", [$recallTime->format('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
-
             $currentHP = max(0, 100 - $totalDamage);
-            
             if ($currentHP <= 0) {
-                $vehicleStatus = 'destroyed';
-                $vehicleHP = 0;
-                $vehicleLevel = 0;
+                $vehicleStatus = 'destroyed'; $vehicleHP = 0; $vehicleLevel = 0;
                 safePlanetWrite($db, "UPDATE planets SET vehicle_status = 'destroyed', vehicle_level = 0, vehicle_hp = 0, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
             } else {
                 $vehicleHP = $currentHP;
                 if ($vehicleStatus === 'returning') {
-                    $recallTimeStr = $planet['vehicle_recall_time'] ?? 'now';
-                    $recallTime = new DateTime($recallTimeStr);
-                    $secondsReturning = max(0, $now->getTimestamp() - $recallTime->getTimestamp());
-                    $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
-                    
-                    if ($secondsReturning >= $secondsToReturn) {
+                    $recallTime = new DateTime($planet['vehicle_recall_time'] ?? 'now');
+                    if (($now->getTimestamp() - $recallTime->getTimestamp()) >= ($recallTime->getTimestamp() - $startTime->getTimestamp())) {
                         $sensorLvl = $planet['vehicle_sensor_lvl'] ?? 1;
-                        $timeBonus = 1 + ($secondsToReturn * 0.0005); // +5% bonus every 1000 seconds
-                        $crystalRate = 0.1 * (1 + ($sensorLvl - 1) * 0.05) * $timeBonus;
-                        $crystalsFound = floor($secondsToReturn * $crystalRate);
-                        $crystalAmount += $crystalsFound;
-                        $vehicleStatus = 'idle';
-                        $vehicleHP = 100;
+                        $timeBonus = 1 + (($recallTime->getTimestamp() - $startTime->getTimestamp()) * 0.0005);
+                        $crystalAmount += floor(($recallTime->getTimestamp() - $startTime->getTimestamp()) * (0.1 * (1 + ($sensorLvl - 1) * 0.05) * $timeBonus));
+                        $vehicleStatus = 'idle'; $vehicleHP = 100;
                         safePlanetWrite($db, "UPDATE planets SET crystal_amount = ?, vehicle_status = 'idle', vehicle_hp = 100, last_updated = ? WHERE id = ?", [$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
                     }
                 }
             }
         }
 
-        // --- Vehicle 2 Expedition Offline Logic ---
+        // Vehicle 2 Logic
         $vehicle2Status = $planet['vehicle2_status'] ?? 'idle';
         $vehicle2HP = $planet['vehicle2_hp'] ?? 100;
         $vehicle2Level = $planet['vehicle2_level'] ?? 0;
-
         if (($vehicle2Status === 'exploring' || $vehicle2Status === 'returning') && $vehicle2Level > 0) {
-            $startTimeStr = $planet['vehicle2_start_time'] ?? 'now';
-            $startTime = new DateTime($startTimeStr);
+            $startTime = new DateTime($planet['vehicle2_start_time'] ?? 'now');
             $secondsSinceStart = max(0, $now->getTimestamp() - $startTime->getTimestamp());
             $damageSeconds = $secondsSinceStart;
-
             if ($vehicle2Status === 'returning') {
-                $recallTimeStr = $planet['vehicle2_recall_time'] ?? 'now';
-                $recallTime = new DateTime($recallTimeStr);
+                $recallTime = new DateTime($planet['vehicle2_recall_time'] ?? 'now');
                 $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
-                $missionCompleteAfter = $secondsToReturn * 2;
-                $damageSeconds = min($secondsSinceStart, $missionCompleteAfter);
+                $damageSeconds = min($secondsSinceStart, $secondsToReturn * 2);
             }
-            
-            $baseDamageRate = 0.1; 
-            $acceleration = 0.003;
-            // Armor is 2x more effective (level counts double for the bonus)
-            $effectiveLevel = 1 + ($vehicle2Level - 1) * 2;
-            $armorFactor = pow($effectiveLevel, 1.2);
+            $baseDamageRate = 0.1; $acceleration = 0.003; $effLvl = 1 + ($vehicle2Level - 1) * 2; $armorFactor = pow($effLvl, 1.2);
             $totalDamage = ($damageSeconds * ($baseDamageRate + ($damageSeconds * $acceleration))) / $armorFactor;
-
-            // Auto-Recall Logic (Offline)
-            $hasAutoRecall = $planet['research_auto_recall'] ?? 0;
-            if ($hasAutoRecall && $vehicle2Status === 'exploring' && $totalDamage >= 10) {
-                // Vehicle should have recalled at 90 HP (10 damage)
-                $safeSeconds = calculateSafeTime(10, $baseDamageRate, $acceleration, $armorFactor);
-                
-                $recallTime = clone $startTime;
-                $recallTime->modify('+' . round($safeSeconds) . ' seconds');
-                
-                // Recalculate based on safe recall
-                $damageSeconds = $safeSeconds; // Damage stops at recall point
-                $totalDamage = 10;
-                $vehicle2Status = 'returning';
-                
-                safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?", [
-                    $recallTime->format('Y-m-d H:i:s'),
-                    date('Y-m-d H:i:s'),
-                    $planet['id']
-                ]);
+            if (($planet['research_auto_recall'] ?? 0) && $vehicle2Status === 'exploring' && $totalDamage >= 10) {
+                $safeSecs = calculateSafeTime(10, $baseDamageRate, $acceleration, $armorFactor);
+                $recallTime = clone $startTime; $recallTime->modify('+' . round($safeSecs) . ' seconds');
+                $damageSeconds = $safeSecs; $totalDamage = 10; $vehicle2Status = 'returning';
+                safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'returning', vehicle2_recall_time = ?, last_updated = ? WHERE id = ?", [$recallTime->format('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $planet['id']]);
             }
-
             $currentHP = max(0, 100 - $totalDamage);
-            
             if ($currentHP <= 0) {
-                $vehicle2Status = 'destroyed';
-                $vehicle2HP = 0;
-                $vehicle2Level = 0;
+                $vehicle2Status = 'destroyed'; $vehicle2HP = 0; $vehicle2Level = 0;
                 safePlanetWrite($db, "UPDATE planets SET vehicle2_status = 'destroyed', vehicle2_level = 0, vehicle2_hp = 0, last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
             } else {
                 $vehicle2HP = $currentHP;
                 if ($vehicle2Status === 'returning') {
-                    $recallTimeStr = $planet['vehicle2_recall_time'] ?? 'now';
-                    $recallTime = new DateTime($recallTimeStr);
-                    $secondsReturning = max(0, $now->getTimestamp() - $recallTime->getTimestamp());
-                    $secondsToReturn = max(0, $recallTime->getTimestamp() - $startTime->getTimestamp());
-                    
-                    if ($secondsReturning >= $secondsToReturn) {
+                    $recallTime = new DateTime($planet['vehicle2_recall_time'] ?? 'now');
+                    if (($now->getTimestamp() - $recallTime->getTimestamp()) >= ($recallTime->getTimestamp() - $startTime->getTimestamp())) {
                         $sensorLvl = $planet['vehicle2_sensor_lvl'] ?? 1;
-                        $timeBonus = 1 + ($secondsToReturn * 0.0005);
-                        // Sensors are 2x more effective (10% bonus instead of 5%)
-                        $crystalRate = 0.2 * (1 + ($sensorLvl - 1) * 0.10) * $timeBonus;
-                        $crystalsFound = floor($secondsToReturn * $crystalRate);
-                        $crystalAmount += $crystalsFound;
-                        $vehicle2Status = 'idle';
-                        $vehicle2HP = 100;
+                        $timeBonus = 1 + (($recallTime->getTimestamp() - $startTime->getTimestamp()) * 0.0005);
+                        $crystalAmount += floor(($recallTime->getTimestamp() - $startTime->getTimestamp()) * (0.2 * (1 + ($sensorLvl - 1) * 0.10) * $timeBonus));
+                        $vehicle2Status = 'idle'; $vehicle2HP = 100;
                         safePlanetWrite($db, "UPDATE planets SET crystal_amount = ?, vehicle2_status = 'idle', vehicle2_hp = 100, last_updated = ? WHERE id = ?", [$crystalAmount, date('Y-m-d H:i:s'), $planet['id']]);
                     }
                 }
             }
         }
-        
-        // --- Drone Logic ---
-        $hasDrone = $planet['has_drone'] ?? 0;
+
+        // Drone storage
         $droneStorage = $planet['drone_storage'] ?? 0;
-        $droneUpgrade1 = $planet['research_drone_upgrade'] ?? 0;
-        $droneUpgrade2 = $planet['research_drone_upgrade_2'] ?? 0;
-        $droneUpgrade3 = $planet['research_drone_upgrade_3'] ?? 0;
-
-        if ($hasDrone) {
-            $multiplier = 1;
-            if ($droneUpgrade3) $multiplier = 100; // 25 * 4
-            elseif ($droneUpgrade2) $multiplier = 25;
-            elseif ($droneUpgrade1) $multiplier = 5;
-
-            $droneProdPerSec = (1 / 300) * $multiplier;
-            $droneLimit = 100 * $multiplier;
-            
-            $droneStorage += ($secondsElapsed * $droneProdPerSec);
-            $droneStorage = min($droneLimit, $droneStorage);
+        if ($planet['has_drone'] ?? 0) {
+            $mult = ($planet['research_drone_upgrade_3'] ?? 0) ? 100 : (($planet['research_drone_upgrade_2'] ?? 0) ? 25 : (($planet['research_drone_upgrade'] ?? 0) ? 5 : 1));
+            $droneStorage = min(100 * $mult, $droneStorage + ($secondsElapsed * (1/300) * $mult));
         }
 
-        // --- Rocket Workshop Offline Logic ---
-        $rocketWorkshopStatus = $planet['rocket_workshop_status'] ?? 'idle';
-        $rocketWorkshopReadyAt = $planet['rocket_workshop_ready_at'] ?? null;
-        $rocketWorkshop2Status = $planet['rocket_workshop_2_status'] ?? 'idle';
-        $rocketWorkshop2ReadyAt = $planet['rocket_workshop_2_ready_at'] ?? null;
-
+        // Rocket Workshop
+        $rwStat1 = $planet['rocket_workshop_status'] ?? 'idle';
+        $rwStat2 = $planet['rocket_workshop_2_status'] ?? 'idle';
         if (($planet['research_rocket_workshop'] ?? 0)) {
-            // Slot 1 (Běžná)
-            if ($rocketWorkshopStatus === 'producing' && $rocketWorkshopReadyAt) {
-                if ($now >= new DateTime($rocketWorkshopReadyAt)) {
-                    $rocketWorkshopStatus = 'ready';
-                    safePlanetWrite($db, "UPDATE planets SET rocket_workshop_status = 'ready', last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
-                }
-            }
-            // Slot 2 (Těžká - unlocked at Lvl 2)
-            if (($planet['rocket_workshop_level'] ?? 1) >= 2 && $rocketWorkshop2Status === 'producing' && $rocketWorkshop2ReadyAt) {
-                if ($now >= new DateTime($rocketWorkshop2ReadyAt)) {
-                    $rocketWorkshop2Status = 'ready';
-                    safePlanetWrite($db, "UPDATE planets SET rocket_workshop_2_status = 'ready', last_updated = ? WHERE id = ?", [date('Y-m-d H:i:s'), $planet['id']]);
-                }
-            }
+            if ($rwStat1 === 'producing' && $now >= new DateTime($planet['rocket_workshop_ready_at'])) { $rwStat1 = 'ready'; safePlanetWrite($db, "UPDATE planets SET rocket_workshop_status = 'ready' WHERE id = ?", [$planet['id']]); }
+            if (($planet['rocket_workshop_level'] ?? 1) >= 2 && $rwStat2 === 'producing' && $now >= new DateTime($planet['rocket_workshop_2_ready_at'])) { $rwStat2 = 'ready'; safePlanetWrite($db, "UPDATE planets SET rocket_workshop_2_status = 'ready' WHERE id = ?", [$planet['id']]); }
         }
 
-        // --- PERSISTENCE: Save calculated resources back to DB ---
-        $updateSql = "UPDATE planets SET 
-            iron_amount = ?, energy_amount = ?, crystal_amount = ?, 
-            res_yellow = ?, res_red = ?, res_blue = ?, 
-            res_green = ?, res_orange = ?, res_purple = ?,
-            res_copper = ?,
-            res_tubes = ?,
-            drone_storage = ?,
-            last_updated = ? 
-            WHERE id = ?";
-        
-        safePlanetWrite($db, $updateSql, [
-            $newIron, $newEnergy, $crystalAmount,
-            $newResData['yellow']['amount'], $newResData['red']['amount'], $newResData['blue']['amount'],
-            $newResData['green']['amount'], $newResData['orange']['amount'], $newResData['purple']['amount'],
-            $newCopper,
-            $newTubes,
-            $droneStorage,
-            date('Y-m-d H:i:s'), $planet['id']
+        // Persistence
+        safePlanetWrite($db, "UPDATE planets SET iron_amount = ?, energy_amount = ?, crystal_amount = ?, res_yellow = ?, res_red = ?, res_blue = ?, res_green = ?, res_orange = ?, res_purple = ?, res_copper = ?, res_tubes = ?, drone_storage = ?, last_updated = ? WHERE id = ?", [
+            $newIron, $newEnergy, $crystalAmount, $newResData['yellow']['amount'], $newResData['red']['amount'], $newResData['blue']['amount'], $newResData['green']['amount'], $newResData['orange']['amount'], $newResData['purple']['amount'], $newCopper, $newTubes, $droneStorage, date('Y-m-d H:i:s'), $planet['id']
         ]);
 
+        $rocketParts = normalizeRocketPartsInventory($planet['rocket_parts'] ?? '');
+        $partsLeft = 0; foreach ($rocketParts as $c) if ($c < 10) $partsLeft++;
+
+        $researchedStr = $planet['researched_colors'] ?? '';
+        $researchedArr = $researchedStr ? explode(',', $researchedStr) : [];
+
         return [
-            'id' => $planet['id'],
-            'user_id' => $planet['user_id'],
-            'player_name' => $planet['player_name'],
-            'iron_amount' => $newIron,
-            'energy_amount' => $newEnergy,
-            'crystal_amount' => $crystalAmount,
-            'res_copper' => $newCopper,
-            'mine_level' => $planet['mine_level'],
-            'solar_plant_level' => $planet['solar_plant_level'],
-            'warehouse_level' => $planet['warehouse_level'],
-            'mine_copper_lvl' => $planet['mine_copper_lvl'],
-            'warehouse_copper_lvl' => $planet['warehouse_copper_lvl'],
-            'research_copper' => $planet['research_copper'],
-            'research_drone_upgrade' => $planet['research_drone_upgrade'],
-            'research_drone_upgrade_2' => $planet['research_drone_upgrade_2'],
-            'research_drone_upgrade_3' => $planet['research_drone_upgrade_3'] ?? 0,
-            'research_warehouse_copper' => $planet['research_warehouse_copper'] ?? 0,
-            'research_auto_recall' => $planet['research_auto_recall'] ?? 0,
-            'research_advanced_lab' => $planet['research_advanced_lab'] ?? 0,
-            'research_rocket_workshop' => $planet['research_rocket_workshop'] ?? 0,
-            'research_alien_slot_3' => $planet['research_alien_slot_3'] ?? 0,
-            'lab_level' => $labLvl,
-            'lab_storage_level' => $labStorageLvl,
-            'res_tubes' => $newTubes,
-            'tube_production' => $tubeProd,
-            'tube_storage_limit' => $tubeLimit,
-            'rocket_workshop_level' => $planet['rocket_workshop_level'] ?? 0,
-            'rocket_workshop_status' => $rocketWorkshopStatus,
-            'rocket_workshop_mode' => $planet['rocket_workshop_mode'] ?? 1,
-            'rocket_workshop_started_at' => $planet['rocket_workshop_started_at'] ?? null,
-            'rocket_workshop_ready_at' => $rocketWorkshopReadyAt,
-            'rocket_workshop_2_status' => $rocketWorkshop2Status,
-            'rocket_workshop_2_ready_at' => $rocketWorkshop2ReadyAt,
-            'rocket_parts' => $rocketParts,
-            'rocket_parts_total' => array_sum($rocketParts),
-            'rocket_parts_all_completed' => count($availableRocketParts) === 0,
-            'vehicle_level' => $vehicleLevel,
-            'vehicle_sensor_lvl' => $planet['vehicle_sensor_lvl'] ?? 1,
-            'vehicle_hp' => $vehicleHP,
-            'vehicle_status' => $vehicleStatus,
-            'vehicle_start_time' => $planet['vehicle_start_time'] ?? null,
-            'vehicle_recall_time' => $planet['vehicle_recall_time'] ?? null,
-            'vehicle2_level' => $vehicle2Level,
-            'vehicle2_sensor_lvl' => $planet['vehicle2_sensor_lvl'] ?? 1,
-            'vehicle2_hp' => $vehicle2HP,
-            'vehicle2_status' => $vehicle2Status,
-            'vehicle2_start_time' => $planet['vehicle2_start_time'] ?? null,
-            'vehicle2_recall_time' => $planet['vehicle2_recall_time'] ?? null,
-            'last_updated' => $planet['last_updated'],
-            'iron_production' => $ironProd,
-            'energy_production' => $energyProd,
-            'iron_storage_limit' => $ironLimit,
-            'copper_production' => $copperProd,
-            'copper_storage_limit' => $copperLimit,
-            'drone_storage_limit' => $droneUpgrade3 ? 10000 : ($droneUpgrade2 ? 2500 : ($droneUpgrade1 ? 500 : 100)),
+            'id' => $planet['id'], 'user_id' => $planet['user_id'], 'player_name' => $planet['player_name'],
+            'iron_amount' => $newIron, 'energy_amount' => $newEnergy, 'crystal_amount' => $crystalAmount, 'res_copper' => $newCopper,
+            'mine_level' => $planet['mine_level'], 'solar_plant_level' => $planet['solar_plant_level'], 'warehouse_level' => $planet['warehouse_level'],
+            'mine_copper_lvl' => $planet['mine_copper_lvl'], 'warehouse_copper_lvl' => $planet['warehouse_copper_lvl'],
+            'research_copper' => $planet['research_copper'], 'research_drone_upgrade' => $planet['research_drone_upgrade'], 'research_drone_upgrade_2' => $planet['research_drone_upgrade_2'],
+            'research_drone_upgrade_3' => $planet['research_drone_upgrade_3'] ?? 0, 'research_warehouse_copper' => $planet['research_warehouse_copper'] ?? 0,
+            'research_auto_recall' => $planet['research_auto_recall'] ?? 0, 'research_advanced_lab' => $planet['research_advanced_lab'] ?? 0,
+            'research_rocket_workshop' => $planet['research_rocket_workshop'] ?? 0, 'research_alien_slot_3' => $planet['research_alien_slot_3'] ?? 0,
+            'research_secret_crystal_mine' => $planet['research_secret_crystal_mine'] ?? 0, 'secret_crystal_mine_level' => $planet['secret_crystal_mine_level'] ?? 0,
+            'secret_mine_production' => $secretMineProd, 'secret_mine_discovered_count' => $totalDiscovered,
+            'lab_level' => $labLvl, 'lab_storage_level' => $labStorageLvl, 'res_tubes' => $newTubes, 'tube_production' => $tubeProd, 'tube_storage_limit' => $tubeLimit,
+            'rocket_workshop_level' => $planet['rocket_workshop_level'] ?? 0, 'rocket_workshop_status' => $rwStat1, 'rocket_workshop_mode' => $planet['rocket_workshop_mode'] ?? 1,
+            'rocket_workshop_ready_at' => $planet['rocket_workshop_ready_at'] ?? null, 'rocket_workshop_2_status' => $rwStat2, 'rocket_workshop_2_ready_at' => $planet['rocket_workshop_2_ready_at'] ?? null,
+            'rocket_parts' => $rocketParts, 'rocket_parts_total' => array_sum($rocketParts), 'rocket_parts_all_completed' => $partsLeft === 0,
+            'vehicle_level' => $vehicleLevel, 'vehicle_hp' => $vehicleHP, 'vehicle_status' => $vehicleStatus,
+            'vehicle2_level' => $vehicle2Level, 'vehicle2_hp' => $vehicle2HP, 'vehicle2_status' => $vehicle2Status,
+            'last_updated' => date('Y-m-d H:i:s'), 'iron_production' => $ironProd, 'energy_production' => $energyProd, 'iron_storage_limit' => $ironLimit,
+            'copper_production' => $copperProd, 'copper_storage_limit' => $copperLimit, 'drone_storage_limit' => ($mult ?? 1) * 100,
             'researched_colors' => $researchedArr,
-            'alien_resources' => $newResData,
-            'has_drone' => $hasDrone,
-            'drone_storage' => $droneStorage
+            'alien_resources' => $newResData, 'has_drone' => $planet['has_drone'] ?? 0, 'drone_storage' => $droneStorage
         ];
     } catch (Exception $e) {
-        // Return basic data if complex logic fails to avoid 500 error
         return isset($planet) ? $planet : null;
     }
 }
-
-
