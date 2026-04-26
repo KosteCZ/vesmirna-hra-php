@@ -295,98 +295,106 @@ const game = {
             // Vehicle 1 Expedition Logic
             if (this.planet.vehicle_status === 'exploring' || this.planet.vehicle_status === 'returning') {
                 const now = new Date();
-                const startTime = new Date(this.planet.vehicle_start_time + " UTC");
-                const secondsOut = (now - startTime) / 1000;
-                let damageSeconds = secondsOut;
+                const startTime = this.planet.vehicle_start_time ? new Date(this.planet.vehicle_start_time + " UTC") : null;
                 
-                const baseDamageRate = 0.1; 
-                const acceleration = 0.003;
-                const armorFactor = Math.pow(this.planet.vehicle_level || 1, 1.2);
-                let displaySeconds = 0;
+                if (startTime && !isNaN(startTime.getTime())) {
+                    const secondsOut = (now - startTime) / 1000;
+                    let damageSeconds = secondsOut;
+                    
+                    const baseDamageRate = 0.1; 
+                    const acceleration = 0.003;
+                    const armorFactor = Math.pow(this.planet.vehicle_level || 1, 1.2);
+                    let displaySeconds = 0;
 
-                if (this.planet.vehicle_status === 'exploring') {
-                    const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
-                    const timeBonus = 1 + (secondsOut * 0.0005);
-                    const crystalRate = 0.1 * (1 + (sensorLvl - 1) * 0.05) * timeBonus;
-                    this.vehicleCrystals = secondsOut * crystalRate;
-                    displaySeconds = secondsOut;
+                    if (this.planet.vehicle_status === 'exploring') {
+                        const sensorLvl = this.planet.vehicle_sensor_lvl || 1;
+                        const timeBonus = 1 + (secondsOut * 0.0005);
+                        const crystalRate = 0.1 * (1 + (sensorLvl - 1) * 0.05) * timeBonus;
+                        this.vehicleCrystals = secondsOut * crystalRate;
+                        displaySeconds = secondsOut;
 
-                    // Auto-Recall
-                    if (this.planet.research_auto_recall && this.vehicleHP <= 90 && !this.recallPending && !this.refreshPromise) {
-                        this.recallVehicle();
+                        // Auto-Recall
+                        if (this.planet.research_auto_recall && this.vehicleHP <= 90 && !this.recallPending && !this.refreshPromise) {
+                            this.recallVehicle();
+                        }
+                    } else {
+                        const recallTime = this.planet.vehicle_recall_time ? new Date(this.planet.vehicle_recall_time + " UTC") : null;
+                        if (recallTime && !isNaN(recallTime.getTime())) {
+                            const secondsReturning = (now - recallTime) / 1000;
+                            const secondsToReturn = (recallTime - startTime) / 1000;
+                            const missionCompleteAfter = secondsToReturn * 2;
+                            damageSeconds = Math.min(secondsOut, missionCompleteAfter);
+                            displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
+                            if (secondsReturning >= secondsToReturn) {
+                                this.refreshDashboard();
+                                return;
+                            }
+                        }
                     }
-                } else {
-                    const recallTime = new Date(this.planet.vehicle_recall_time + " UTC");
-                    const secondsReturning = (now - recallTime) / 1000;
-                    const secondsToReturn = (recallTime - startTime) / 1000;
-                    const missionCompleteAfter = secondsToReturn * 2;
-                    damageSeconds = Math.min(secondsOut, missionCompleteAfter);
-                    displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
-                    if (secondsReturning >= secondsToReturn) {
-                        this.refreshDashboard();
-                        return;
-                    }
+
+                    const totalDamage = (damageSeconds * (baseDamageRate + (damageSeconds * acceleration))) / armorFactor;
+                    this.vehicleHP = Math.max(0, 100 - totalDamage);
+
+                    const mins = Math.floor(displaySeconds / 60);
+                    const secs = Math.floor(displaySeconds % 60);
+                    const timerEl = document.getElementById('vehicle-timer');
+                    if (timerEl) timerEl.innerText = `${isNaN(mins) ? 0 : mins}:${(isNaN(secs) ? 0 : secs).toString().padStart(2, '0')}`;
+
+                    if (this.vehicleHP <= 0) this.destroyVehicle();
                 }
-
-                const totalDamage = (damageSeconds * (baseDamageRate + (damageSeconds * acceleration))) / armorFactor;
-                this.vehicleHP = Math.max(0, 100 - totalDamage);
-
-                const mins = Math.floor(displaySeconds / 60);
-                const secs = Math.floor(displaySeconds % 60);
-                const timerEl = document.getElementById('vehicle-timer');
-                if (timerEl) timerEl.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
-
-                if (this.vehicleHP <= 0) this.destroyVehicle();
             }
 
             // Vehicle 2 Expedition Logic
             if (this.planet.vehicle2_status === 'exploring' || this.planet.vehicle2_status === 'returning') {
                 const now = new Date();
-                const startTime = new Date(this.planet.vehicle2_start_time + " UTC");
-                const secondsOut = (now - startTime) / 1000;
-                let damageSeconds = secondsOut;
+                const startTime = this.planet.vehicle2_start_time ? new Date(this.planet.vehicle2_start_time + " UTC") : null;
                 
-                const baseDamageRate = 0.1; 
-                const acceleration = 0.003;
-                // Armor is 2x more effective (level counts double for the bonus)
-                const effectiveLevel = 1 + ((this.planet.vehicle2_level || 1) - 1) * 2;
-                const armorFactor = Math.pow(effectiveLevel, 1.2);
-                let displaySeconds = 0;
+                if (startTime && !isNaN(startTime.getTime())) {
+                    const secondsOut = (now - startTime) / 1000;
+                    let damageSeconds = secondsOut;
+                    
+                    const baseDamageRate = 0.1; 
+                    const acceleration = 0.003;
+                    const effectiveLevel = 1 + ((this.planet.vehicle2_level || 1) - 1) * 2;
+                    const armorFactor = Math.pow(effectiveLevel, 1.2);
+                    let displaySeconds = 0;
 
-                if (this.planet.vehicle2_status === 'exploring') {
-                    const sensorLvl = this.planet.vehicle2_sensor_lvl || 1;
-                    const timeBonus = 1 + (secondsOut * 0.0005);
-                    // Sensors are 2x more effective (10% bonus instead of 5%)
-                    const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.10) * timeBonus;
-                    this.vehicle2Crystals = secondsOut * crystalRate;
-                    displaySeconds = secondsOut;
+                    if (this.planet.vehicle2_status === 'exploring') {
+                        const sensorLvl = this.planet.vehicle2_sensor_lvl || 1;
+                        const timeBonus = 1 + (secondsOut * 0.0005);
+                        const crystalRate = 0.2 * (1 + (sensorLvl - 1) * 0.10) * timeBonus;
+                        this.vehicle2Crystals = secondsOut * crystalRate;
+                        displaySeconds = secondsOut;
 
-                    // Auto-Recall
-                    if (this.planet.research_auto_recall && this.vehicle2HP <= 90 && !this.recallVehicle2Pending && !this.refreshPromise) {
-                        this.recallVehicle2();
+                        // Auto-Recall
+                        if (this.planet.research_auto_recall && this.vehicle2HP <= 90 && !this.recallVehicle2Pending && !this.refreshPromise) {
+                            this.recallVehicle2();
+                        }
+                    } else {
+                        const recallTime = this.planet.vehicle2_recall_time ? new Date(this.planet.vehicle2_recall_time + " UTC") : null;
+                        if (recallTime && !isNaN(recallTime.getTime())) {
+                            const secondsReturning = (now - recallTime) / 1000;
+                            const secondsToReturn = (recallTime - startTime) / 1000;
+                            const missionCompleteAfter = secondsToReturn * 2;
+                            damageSeconds = Math.min(secondsOut, missionCompleteAfter);
+                            displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
+                            if (secondsReturning >= secondsToReturn) {
+                                this.refreshDashboard();
+                                return;
+                            }
+                        }
                     }
-                } else {
-                    const recallTime = new Date(this.planet.vehicle2_recall_time + " UTC");
-                    const secondsReturning = (now - recallTime) / 1000;
-                    const secondsToReturn = (recallTime - startTime) / 1000;
-                    const missionCompleteAfter = secondsToReturn * 2;
-                    damageSeconds = Math.min(secondsOut, missionCompleteAfter);
-                    displaySeconds = Math.max(0, secondsToReturn - secondsReturning);
-                    if (secondsReturning >= secondsToReturn) {
-                        this.refreshDashboard();
-                        return;
-                    }
+
+                    const totalDamage = (damageSeconds * (baseDamageRate + (damageSeconds * acceleration))) / armorFactor;
+                    this.vehicle2HP = Math.max(0, 100 - totalDamage);
+
+                    const mins = Math.floor(displaySeconds / 60);
+                    const secs = Math.floor(displaySeconds % 60);
+                    const timerEl = document.getElementById('vehicle2-timer');
+                    if (timerEl) timerEl.innerText = `${isNaN(mins) ? 0 : mins}:${(isNaN(secs) ? 0 : secs).toString().padStart(2, '0')}`;
+
+                    if (this.vehicle2HP <= 0) this.destroyVehicle2();
                 }
-
-                const totalDamage = (damageSeconds * (baseDamageRate + (damageSeconds * acceleration))) / armorFactor;
-                this.vehicle2HP = Math.max(0, 100 - totalDamage);
-
-                const mins = Math.floor(displaySeconds / 60);
-                const secs = Math.floor(displaySeconds % 60);
-                const timerEl = document.getElementById('vehicle2-timer');
-                if (timerEl) timerEl.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
-
-                if (this.vehicle2HP <= 0) this.destroyVehicle2();
             }
 
             this.updateUI();
