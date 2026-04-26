@@ -618,6 +618,6 @@ session_start();
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

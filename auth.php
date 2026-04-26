@@ -19,14 +19,10 @@ if ($action === 'register') {
     
     try {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare("INSERT INTO users (email, password, player_name) VALUES (?, ?, ?)");
-        $stmt->execute([$email, $hashedPassword, $playerName]);
-        
-        $userId = $db->lastInsertId();
+        $userId = createUser($db, $email, $hashedPassword, $playerName);
         
         // Auto-create planet
-        $stmt = $db->prepare("INSERT INTO planets (user_id, iron_amount, energy_amount, last_updated) VALUES (?, 100, 50, ?)");
-        $stmt->execute([$userId, date('Y-m-d H:i:s')]);
+        createPlanetForUser($db, (int) $userId, date('Y-m-d H:i:s'));
         
         $_SESSION['user_id'] = $userId;
         $_SESSION['player_name'] = $playerName;
@@ -50,17 +46,14 @@ if ($action === 'login') {
         exit;
     }
     
-    $stmt = $db->prepare("SELECT id, password, player_name FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    $user = findUserByEmail($db, $email);
     
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['player_name'] = $user['player_name'];
         
         // Update last login
-        $stmt = $db->prepare("UPDATE users SET last_login = ? WHERE id = ?");
-        $stmt->execute([date('Y-m-d H:i:s'), $user['id']]);
+        updateUserLastLogin($db, (int) $user['id'], date('Y-m-d H:i:s'));
         
         echo json_encode(['success' => true]);
     } else {

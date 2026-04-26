@@ -9,13 +9,7 @@ if (!isset($_SESSION['player_name']) || $_SESSION['player_name'] !== 'Velitel Ho
 }
 
 // Fetch all players and their planet data
-$stmt = $db->query("
-    SELECT u.player_name, p.* 
-    FROM users u 
-    JOIN planets p ON u.id = p.user_id 
-    ORDER BY u.player_name ASC
-");
-$players = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$players = findAllPlayersWithPlanets($db);
 
 $rocketPartDefs = getRocketPartDefinitions();
 
