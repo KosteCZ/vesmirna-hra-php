@@ -77,7 +77,7 @@ final class PlanetSimulator
         $newCrystals = ($planet['crystal_amount'] ?? 0) + ($secondsElapsed * $secretMineProd * $productionFactor);
 
         foreach ($colors as $color) {
-            $newResData[$color]['amount'] += ($secondsElapsed * $newResData[$color]['prod'] * $productionFactor);
+            $newResData[$color]['amount'] = min(10000000, $newResData[$color]['amount'] + ($secondsElapsed * $newResData[$color]['prod'] * $productionFactor));
         }
 
         $vehicleState = self::simulateVehicleOne($db, $planet, $now, $newCrystals);
