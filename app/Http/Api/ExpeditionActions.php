@@ -5,7 +5,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'buy_vehicle') {
         $planet = getPlanetData($userId, $db);
         if ($planet['vehicle_level'] > 0 && $planet['vehicle_status'] !== 'destroyed') {
-            echo json_encode(['error' => 'Vozidlo uz mas!']);
+            echo json_encode(['error' => 'Vozidlo už máš!']);
             return true;
         }
 
@@ -14,7 +14,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
             buyVehicle($db, $userId, $newIron, $planet['energy_amount'], date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek ÄąÄľeleza!']);
+            echo json_encode(['error' => 'Nedostatek železa!']);
         }
 
         return true;
@@ -23,11 +23,11 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'start_expedition') {
         $planet = getPlanetData($userId, $db);
         if (($planet['vehicle_level'] ?? 0) <= 0) {
-            echo json_encode(['error' => 'Nejdriv musis koupit vozidlo!']);
+            echo json_encode(['error' => 'Nejdřív musíš koupit vozidlo!']);
             return true;
         }
         if (($planet['vehicle_status'] ?? 'idle') !== 'idle') {
-            echo json_encode(['error' => 'Vozidlo uz je na misi nebo mimo provoz!']);
+            echo json_encode(['error' => 'Vozidlo už je na misi nebo mimo provoz!']);
             return true;
         }
 
@@ -40,7 +40,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'recall_vehicle') {
         $planet = getPlanetData($userId, $db);
         if (($planet['vehicle_status'] ?? '') !== 'exploring') {
-            echo json_encode(['error' => 'Vozidlo zrovna neni na pruzkumu!']);
+            echo json_encode(['error' => 'Vozidlo zrovna není na průzkumu!']);
             return true;
         }
 
@@ -53,7 +53,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'finish_expedition') {
         $planet = getPlanetData($userId, $db);
         if (($planet['vehicle_status'] ?? '') !== 'returning' || empty($planet['vehicle_start_time']) || empty($planet['vehicle_recall_time'])) {
-            echo json_encode(['error' => 'Expedici nelze dokoncit v aktualnim stavu!']);
+            echo json_encode(['error' => 'Expedici nelze dokončit v aktuálním stavu!']);
             return true;
         }
 
@@ -85,7 +85,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
             upgradeVehicle($db, $userId, $newIron, $planet['energy_amount'], date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek ÄąÄľeleza!']);
+            echo json_encode(['error' => 'Nedostatek železa!']);
         }
 
         return true;
@@ -99,7 +99,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
             upgradeVehicleSensors($db, $userId, $newIron, $planet['energy_amount'], date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => "Nedostatek ÄąÄľeleza ({$cost})!"]);
+            echo json_encode(['error' => "Nedostatek železa ({$cost})!"]);
         }
 
         return true;
@@ -108,18 +108,18 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'buy_vehicle2') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_copper']) {
-            echo json_encode(['error' => 'MĂ„â€şĂ„Ĺą nenÄ‚Â­ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Měď není vyzkoumána!']);
             return true;
         }
         if ($planet['vehicle2_level'] > 0 && $planet['vehicle2_status'] !== 'destroyed') {
-            echo json_encode(['error' => 'Druhe vozidlo uz mas!']);
+            echo json_encode(['error' => 'Druhé vozidlo už máš!']);
             return true;
         }
         if ($planet['res_copper'] >= 500) {
             buyVehicle2($db, $userId, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek mĂ„â€şdi (500 Cu)!']);
+            echo json_encode(['error' => 'Nedostatek mědi (500 Cu)!']);
         }
 
         return true;
@@ -128,11 +128,11 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'start_expedition2') {
         $planet = getPlanetData($userId, $db);
         if (($planet['vehicle2_level'] ?? 0) <= 0) {
-            echo json_encode(['error' => 'Nejdriv musis koupit druhe vozidlo!']);
+            echo json_encode(['error' => 'Nejdřív musíš koupit druhé vozidlo!']);
             return true;
         }
         if (($planet['vehicle2_status'] ?? 'idle') !== 'idle') {
-            echo json_encode(['error' => 'Druhe vozidlo uz je na misi nebo mimo provoz!']);
+            echo json_encode(['error' => 'Druhé vozidlo už je na misi nebo mimo provoz!']);
             return true;
         }
         $now = date('Y-m-d H:i:s');
@@ -144,7 +144,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'recall_vehicle2') {
         $planet = getPlanetData($userId, $db);
         if (($planet['vehicle2_status'] ?? '') !== 'exploring') {
-            echo json_encode(['error' => 'Druhe vozidlo zrovna neni na pruzkumu!']);
+            echo json_encode(['error' => 'Druhé vozidlo zrovna není na průzkumu!']);
             return true;
         }
         $now = date('Y-m-d H:i:s');
@@ -156,7 +156,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'finish_expedition2') {
         $planet = getPlanetData($userId, $db);
         if (($planet['vehicle2_status'] ?? '') !== 'returning' || empty($planet['vehicle2_start_time']) || empty($planet['vehicle2_recall_time'])) {
-            echo json_encode(['error' => 'Expedici druheho vozidla nelze dokoncit v aktualnim stavu!']);
+            echo json_encode(['error' => 'Expedici druhého vozidla nelze dokončit v aktuálním stavu!']);
             return true;
         }
         $startTime = new DateTime($planet['vehicle2_start_time']);
@@ -185,7 +185,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
             upgradeVehicle2Armor($db, $userId, $cost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => "Nedostatek mĂ„â€şdi ({$cost} Cu)!"]);
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
         }
 
         return true;
@@ -198,7 +198,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
             upgradeVehicle2Sensors($db, $userId, $cost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => "Nedostatek mĂ„â€şdi ({$cost} Cu)!"]);
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
         }
 
         return true;
@@ -207,7 +207,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'buy_drone') {
         $planet = getPlanetData($userId, $db);
         if ($planet['has_drone']) {
-            echo json_encode(['error' => 'Drona jiÄąÄľ mÄ‚Ë‡ÄąË‡!']);
+            echo json_encode(['error' => 'Drona již máš!']);
             return true;
         }
 
@@ -215,7 +215,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
             buyDrone($db, $userId, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek krystalÄąĹ» (250)!']);
+            echo json_encode(['error' => 'Nedostatek krystalů (250)!']);
         }
 
         return true;
@@ -224,7 +224,7 @@ function handleExpeditionAction(string $action, int $userId, PDO $db): bool
     if ($action === 'collect_drone') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['has_drone']) {
-            echo json_encode(['error' => 'NemÄ‚Ë‡ÄąË‡ drona!']);
+            echo json_encode(['error' => 'Nemáš drona!']);
             return true;
         }
 

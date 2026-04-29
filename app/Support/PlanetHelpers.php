@@ -26,16 +26,16 @@ function calculateSafeTime($targetDamage, $baseRate, $acceleration, $armorFactor
 
 function getRocketPartDefinitions(): array {
     return [
-        'rocket_tip' => "Ĺ piÄŤka rakety",
+        'rocket_tip' => "Špička rakety",
         'rocket_body' => 'Trup rakety',
-        'fuel_tank' => "PalivovĂ© nĂˇdrĹľe",
-        'jet_engine' => "TryskovĂ˝ motor",
+        'fuel_tank' => "Palivové nádrže",
+        'jet_engine' => "Tryskový motor",
         'satellite' => 'Satelit',
-        'solar_panel' => "SolĂˇrnĂ­ panel",
+        'solar_panel' => "Solární panel",
         'seat' => 'Sedadlo',
         'fuel_canister' => "Kanystr s palivem",
-        'electronics' => "ElektronickĂ© zaĹ™Ă­zenĂ­",
-        'tools' => "NĂˇĹ™adĂ­"
+        'electronics' => "Elektronické zařízení",
+        'tools' => "Nářadí"
     ];
 }
 

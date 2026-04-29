@@ -5,11 +5,11 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_secret_crystal_mine') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_alien_slot_3']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t nejdÄąâ„˘Ä‚Â­ve vyzkoumanÄ‚Ëť 3. slot pro alien doly!']);
+            echo json_encode(['error' => 'Musíš mít nejdříve vyzkoumaný 3. slot pro alien doly!']);
             return true;
         }
         if ($planet['research_secret_crystal_mine']) {
-            echo json_encode(['error' => 'VÄ‚Ëťzkum jiÄąÄľ mÄ‚Ë‡ÄąË‡!']);
+            echo json_encode(['error' => 'Výzkum již máš!']);
             return true;
         }
 
@@ -17,7 +17,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             researchSecretCrystalMine($db, $userId, SECRET_MINE_RESEARCH_COST_TUBES, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek zkumavek pro vÄ‚Ëťzkum!']);
+            echo json_encode(['error' => 'Nedostatek zkumavek pro výzkum!']);
         }
 
         return true;
@@ -26,11 +26,11 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_alien_slot_3') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_rocket_workshop']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t hotovou Raketovou dÄ‚Â­lnu!']);
+            echo json_encode(['error' => 'Musíš mít hotovou Raketovou dílnu!']);
             return true;
         }
         if ($planet['research_alien_slot_3']) {
-            echo json_encode(['error' => 'VÄ‚Ëťzkum jiÄąÄľ mÄ‚Ë‡ÄąË‡!']);
+            echo json_encode(['error' => 'Výzkum již máš!']);
             return true;
         }
 
@@ -42,7 +42,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
         }
 
         if ($minesAt50 < 2) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t alespoÄąÂ 2 pÄąâ„˘edeÄąË‡lÄ‚Â© doly na Ä‚Ĺźrovni 50!']);
+            echo json_encode(['error' => 'Musíš mít alespoň 2 předešlé doly na úrovni 50!']);
             return true;
         }
 
@@ -52,7 +52,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             researchAlienSlot3($db, $userId, ALIEN_SLOT_3_IRON_COST, ALIEN_SLOT_3_COPPER_COST, ALIEN_SLOT_3_TUBES_COST, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek surovin pro vÄ‚Ëťzkum!']);
+            echo json_encode(['error' => 'Nedostatek surovin pro výzkum!']);
         }
 
         return true;
@@ -61,7 +61,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_color') {
         $color = $_POST['color'] ?? '';
         if (!in_array($color, ALLOWED_COLORS, true)) {
-            echo json_encode(['error' => 'Neplatna barva!']);
+            echo json_encode(['error' => 'Neplatná barva!']);
             return true;
         }
 
@@ -70,11 +70,11 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
         $maxSlots = $planet['research_alien_slot_3'] ? 3 : 2;
 
         if (count($researched) >= $maxSlots) {
-            echo json_encode(['error' => "JiÄąÄľ mÄ‚Ë‡ÄąË‡ vyzkoumÄ‚Ë‡no maximum barev ({$maxSlots})!"]);
+            echo json_encode(['error' => "Již máš vyzkoumáno maximum barev ({$maxSlots})!"]);
             return true;
         }
         if (in_array($color, $researched, true)) {
-            echo json_encode(['error' => 'Tato barva je jiÄąÄľ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Tato barva je již vyzkoumána!']);
             return true;
         }
 
@@ -86,7 +86,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             researchColor($db, $userId, $cost, $newList, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek krystalÄąĹ»!']);
+            echo json_encode(['error' => 'Nedostatek krystalů!']);
         }
 
         return true;
@@ -95,7 +95,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_copper') {
         $planet = getPlanetData($userId, $db);
         if ($planet['research_copper']) {
-            echo json_encode(['error' => 'MĂ„â€şĂ„Ĺą je jiÄąÄľ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Měď je již vyzkoumána!']);
             return true;
         }
 
@@ -108,7 +108,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
         }
 
         if (!$hasEnoughMaterial) {
-            echo json_encode(['error' => 'PotÄąâ„˘ebujeÄąË‡ alespoÄąÂ 2000 jednoho druhu barevnÄ‚Â©ho materiÄ‚Ë‡lu!']);
+            echo json_encode(['error' => 'Potřebuješ alespoň 2000 jednoho druhu barevného materiálu!']);
             return true;
         }
 
@@ -127,11 +127,11 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_drone_upgrade') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_copper']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t nejdÄąâ„˘Ä‚Â­ve vyzkoumanou MĂ„â€şĂ„Ĺą!']);
+            echo json_encode(['error' => 'Musíš mít nejdříve vyzkoumanou Měď!']);
             return true;
         }
         if ($planet['research_drone_upgrade']) {
-            echo json_encode(['error' => 'VylepÄąË‡enÄ‚Â­ drona je jiÄąÄľ vyzkoumÄ‚Ë‡no!']);
+            echo json_encode(['error' => 'Vylepšení drona je již vyzkoumáno!']);
             return true;
         }
 
@@ -140,7 +140,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             researchDroneUpgrade($db, $userId, $copperCost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek mĂ„â€şdi (100 Cu)!']);
+            echo json_encode(['error' => 'Nedostatek mědi (100 Cu)!']);
         }
 
         return true;
@@ -149,15 +149,15 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_drone_upgrade_2') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_copper']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t nejdÄąâ„˘Ä‚Â­ve vyzkoumanou MĂ„â€şĂ„Ĺą!']);
+            echo json_encode(['error' => 'Musíš mít nejdříve vyzkoumanou Měď!']);
             return true;
         }
         if ($planet['research_drone_upgrade_2']) {
-            echo json_encode(['error' => 'VylepÄąË‡enÄ‚Â­ drona II je jiÄąÄľ vyzkoumÄ‚Ë‡no!']);
+            echo json_encode(['error' => 'Vylepšení drona II je již vyzkoumáno!']);
             return true;
         }
         if (count($planet['researched_colors']) < 2) {
-            echo json_encode(['error' => 'PotÄąâ„˘ebujeÄąË‡ mÄ‚Â­t vyzkoumÄ‚Ë‡ny alespoÄąÂ 2 barvy!']);
+            echo json_encode(['error' => 'Potřebuješ mít vyzkoumány alespoň 2 barvy!']);
             return true;
         }
 
@@ -166,7 +166,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             researchDroneUpgrade2($db, $userId, $copperCost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek mĂ„â€şdi (500 Cu)!']);
+            echo json_encode(['error' => 'Nedostatek mědi (500 Cu)!']);
         }
 
         return true;
@@ -175,11 +175,11 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_advanced_lab') {
         $planet = getPlanetData($userId, $db);
         if ($planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'PokroĂ„Ĺ¤ilÄ‚Ë‡ laboratoÄąâ„˘ je jiÄąÄľ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Pokročilá laboratoř je již vyzkoumána!']);
             return true;
         }
         if (count($planet['researched_colors']) < 2) {
-            echo json_encode(['error' => 'PotÄąâ„˘ebujeÄąË‡ mÄ‚Â­t vyzkoumÄ‚Ë‡ny alespoÄąÂ 2 barvy!']);
+            echo json_encode(['error' => 'Potřebuješ mít vyzkoumány alespoň 2 barvy!']);
             return true;
         }
 
@@ -188,7 +188,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             $totalColored += $res['amount'];
         }
         if ($totalColored < 10000) {
-            echo json_encode(['error' => 'PotÄąâ„˘ebujeÄąË‡ celkem 10 000 barevnÄ‚Â©ho materiÄ‚Ë‡lu!']);
+            echo json_encode(['error' => 'Potřebuješ celkem 10 000 barevného materiálu!']);
             return true;
         }
 
@@ -197,7 +197,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
             researchAdvancedLab($db, $userId, $copperCost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek mĂ„â€şdi (5000 Cu)!']);
+            echo json_encode(['error' => 'Nedostatek mědi (5000 Cu)!']);
         }
 
         return true;
@@ -206,11 +206,11 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === '__deprecated_duplicate_research_warehouse_copper__' || $action === 'research_warehouse_copper') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t PokroĂ„Ĺ¤ilou laboratoÄąâ„˘!']);
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
             return true;
         }
         if ($planet['warehouse_level'] < 200) {
-            echo json_encode(['error' => 'Sklad ÄąÄľeleza musÄ‚Â­ bÄ‚Ëťt na Ä‚Ĺźrovni 200!']);
+            echo json_encode(['error' => 'Sklad železa musí být na úrovni 200!']);
             return true;
         }
 
@@ -228,7 +228,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === '__deprecated_duplicate_research_drone_upgrade_3__' || $action === 'research_drone_upgrade_3') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t PokroĂ„Ĺ¤ilou laboratoÄąâ„˘!']);
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
             return true;
         }
 
@@ -246,7 +246,7 @@ function handleResearchAction(string $action, int $userId, PDO $db): bool
     if ($action === '__deprecated_duplicate_research_auto_recall__' || $action === 'research_auto_recall') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'MusÄ‚Â­ÄąË‡ mÄ‚Â­t PokroĂ„Ĺ¤ilou laboratoÄąâ„˘!']);
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
             return true;
         }
 

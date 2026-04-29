@@ -272,29 +272,29 @@ session_start();
             <section id="rocket-workshop-section" class="card hidden" style="margin-bottom: 30px;">
                 <h3 style="display: flex; align-items: center; gap: 10px;">
                     <span id="icon-rocket-workshop-container" style="display: inline-flex; vertical-align: middle;">🚀</span>
-                    Raketov&aacute; d&iacute;lna
+                    Raketová dílna
                 </h3>
                 <p style="font-size: 0.9rem; color: #888; margin-top: 0;">
-                    Experiment&aacute;ln&iacute; d&iacute;lna pro kompletaci raketov&yacute;ch sou&#269;&aacute;stek. Ka&#382;dou &#269;&aacute;st lze vyrobit maxim&aacute;ln&#283; 10x.
+                    Experimentální dílna pro kompletaci raketových součástek. Každou část lze vyrobit maximálně 10x.
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
                     <div style="flex: 1 1 300px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <p class="lvl" style="margin: 0;">&Uacute;rove&#328; <span id="rocket-workshop-lvl">0</span></p>
+                            <p class="lvl" style="margin: 0;">Úroveň <span id="rocket-workshop-lvl">0</span></p>
                             <button id="rocket-workshop-upgrade-btn" onclick="game.upgradeRocketWorkshop()" class="hidden" style="width: auto; background: #007bff; padding: 5px 15px; font-size: 0.8rem;">
-                                Vylep&scaron;it d&iacute;lnu (1M Fe)
+                                Vylepšit dílnu (1M Fe)
                             </button>
                         </div>
 
                         <!-- Slot 1: Běžná -->
                         <div class="workshop-slot card" style="padding: 15px; margin-bottom: 15px; border-color: #ff704333;">
-                            <p style="margin: 0 0 10px; font-weight: bold; color: #ff7043;">B&#283;&#382;n&aacute; v&yacute;roba (8h)</p>
-                            <p id="ws-slot1-status" style="font-size: 0.85rem; margin-bottom: 10px; color: #888;">P&#345;ipraveno</p>
+                            <p style="margin: 0 0 10px; font-weight: bold; color: #ff7043;">Běžná výroba (8h)</p>
+                            <p id="ws-slot1-status" style="font-size: 0.85rem; margin-bottom: 10px; color: #888;">Připraveno</p>
                             <div id="ws-slot1-timer-wrap" class="hidden" style="margin-bottom: 10px;">
                                 <div class="progress-bg" style="height: 6px; margin-bottom: 5px;">
                                     <div id="ws-slot1-progress" class="progress-bar" style="background: #ff7043; width: 0%;"></div>
                                 </div>
-                                <p style="font-size: 0.8rem; color: #00d2ff; margin: 0;">Zb&yacute;v&aacute;: <span id="ws-slot1-timer">00:00:00</span></p>
+                                <p style="font-size: 0.8rem; color: #00d2ff; margin: 0;">Zbývá: <span id="ws-slot1-timer">00:00:00</span></p>
                             </div>
                             <button id="ws-slot1-start-btn" onclick="game.startRocketWorkshopProduction(1)" style="background: #ff7043; font-size: 0.85rem;">Spustit (10k zkum.)</button>
                             <button id="ws-slot1-collect-btn" onclick="game.collectRocketWorkshopProduct(1)" class="hidden" style="background: #28a745; font-size: 0.85rem;">Vyzvednout (1 ks)</button>
@@ -302,26 +302,26 @@ session_start();
 
                         <!-- Slot 2: Těžká -->
                         <div id="ws-slot2-container" class="workshop-slot card hidden" style="padding: 15px; border-color: #e64a1933;">
-                            <p style="margin: 0 0 10px; font-weight: bold; color: #e64a19;">T&#283;&#382;k&aacute; v&yacute;roba (16h)</p>
-                            <p id="ws-slot2-status" style="font-size: 0.85rem; margin-bottom: 10px; color: #888;">P&#345;ipraveno</p>
+                            <p style="margin: 0 0 10px; font-weight: bold; color: #e64a19;">Těžká výroba (16h)</p>
+                            <p id="ws-slot2-status" style="font-size: 0.85rem; margin-bottom: 10px; color: #888;">Připraveno</p>
                             <div id="ws-slot2-timer-wrap" class="hidden" style="margin-bottom: 10px;">
                                 <div class="progress-bg" style="height: 6px; margin-bottom: 5px;">
                                     <div id="ws-slot2-progress" class="progress-bar" style="background: #e64a19; width: 0%;"></div>
                                 </div>
-                                <p style="font-size: 0.8rem; color: #00d2ff; margin: 0;">Zb&yacute;v&aacute;: <span id="ws-slot2-timer">00:00:00</span></p>
+                                <p style="font-size: 0.8rem; color: #00d2ff; margin: 0;">Zbývá: <span id="ws-slot2-timer">00:00:00</span></p>
                             </div>
                             <button id="ws-slot2-start-btn" onclick="game.startRocketWorkshopProduction(2)" style="background: #e64a19; font-size: 0.85rem;">Spustit (20k zkum.)</button>
                             <button id="ws-slot2-collect-btn" onclick="game.collectRocketWorkshopProduct(2)" class="hidden" style="background: #28a745; font-size: 0.85rem;">Vyzvednout (2 ks)</button>
                         </div>
 
                         <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745; font-size: 0.85rem;">
-                            V&#353;echny druhy sou&#269;&aacute;stek u&#382; m&aacute;&scaron; vyroben&eacute; 10x.
+                            Všechny druhy součástek už máš vyrobené 10x.
                         </p>
                     </div>
 
                     <div style="flex: 1 1 320px;">
                         <p style="margin: 0 0 10px;">
-                            Hotov&eacute; d&iacute;ly: <strong><span id="rocket-parts-total">0</span> / 100</strong>
+                            Hotové díly: <strong><span id="rocket-parts-total">0</span> / 100</strong>
                         </p>
                         <div id="rocket-parts-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
                             <!-- Filled by JS -->
@@ -551,17 +551,17 @@ session_start();
                     </button>
                 </div>
                 <div id="research-rocket-workshop-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
-                    <p><strong>Raketov&aacute; d&iacute;lna</strong></p>
-                    <p style="font-size: 0.9rem; color: #888;">Za 15000 zkumavek odemkne a rovnou postav&iacute; novou budovu pro osmihodinovou v&yacute;robu raketov&yacute;ch sou&#269;&aacute;stek.</p>
+                    <p><strong>Raketová dílna</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Za 15000 zkumavek odemkne a rovnou postaví novou budovu pro osmihodinovou výrobu raketových součástek.</p>
                     <button id="research-rocket-workshop-btn" onclick="game.researchRocketWorkshop()" style="background: #ff7043; color: black; margin-top: 10px;">
                         Vyzkoumat a postavit (15000 zkumavek)
                     </button>
                 </div>
 
                 <div id="research-alien-slot-3-container" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
-                    <p><strong>3. d&#367;l na mimozemsk&eacute; materi&aacute;ly</strong></p>
-                    <p style="font-size: 0.9rem; color: #888;">Umo&#382;n&iacute; t&#283;&#382;it t&#345;et&iacute; druh mimozemsk&eacute;ho materi&aacute;lu sou&#269;asn&#283;.</p>
-                    <p style="font-size: 0.8rem; color: #aaa;">Vy&#382;aduje: 2 st&aacute;vaj&iacute;c&iacute; doly Lvl 50+, Raketov&aacute; d&iacute;lna.</p>
+                    <p><strong>3. důl na mimozemské materiály</strong></p>
+                    <p style="font-size: 0.9rem; color: #888;">Umožní těžit třetí druh mimozemského materiálu současně.</p>
+                    <p style="font-size: 0.8rem; color: #aaa;">Vyžaduje: 2 stávající doly Lvl 50+, Raketová dílna.</p>
                     <button id="research-alien-slot-3-btn" onclick="game.researchAlienSlot3()" style="background: #bc4aff; color: black; margin-top: 10px;">
                         Vyzkoumat (25k zkum., 2M Fe, 25k Cu)
                     </button>
@@ -603,7 +603,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.04.26.2107
+        v2026.04.29.2155
     </footer>
 
     <!-- Workshop Item Modal -->

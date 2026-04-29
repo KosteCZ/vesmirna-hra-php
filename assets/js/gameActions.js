@@ -117,7 +117,7 @@ export const gameActionMethods = {
             const item = document.createElement('div');
             item.innerHTML = `
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
-                    <span style="display: flex; align-items: center;"><span style="color: ${colorCode}; vertical-align: middle; margin-right: 5px; display: inline-flex;">${icon}</span> <strong>${this.colorNames[color]} materiĂˇl</strong></span>
+                    <span style="display: flex; align-items: center;"><span style="color: ${colorCode}; vertical-align: middle; margin-right: 5px; display: inline-flex;">${icon}</span> <strong>${this.colorNames[color]} materiál</strong></span>
                     <span>${Math.floor(amount).toLocaleString()} / ${target.toLocaleString()}</span>
                 </div>
                 <div class="progress-bg" style="height: 12px;">
@@ -138,8 +138,8 @@ export const gameActionMethods = {
     async researchWarehouseCopper() { await this.postAction('research_warehouse_copper'); },
     async researchAutoRecall() { await this.postAction('research_auto_recall'); },
     async upgradeWarehouseCopperEff() { await this.postAction('upgrade_warehouse_copper_eff'); },
-    async buyVehicle() { if (this.displayIron < 500) return alert('Nedostatek Ĺľeleza!'); await this.postAction('buy_vehicle'); },
-    async buyVehicle2() { if (this.displayCopper < 500) return alert('Nedostatek mÄ›di (500 Cu)!'); await this.postAction('buy_vehicle2'); },
+    async buyVehicle() { if (this.displayIron < 500) return alert('Nedostatek železa!'); await this.postAction('buy_vehicle'); },
+    async buyVehicle2() { if (this.displayCopper < 500) return alert('Nedostatek mědi (500 Cu)!'); await this.postAction('buy_vehicle2'); },
     async startExpedition() { await this.postAction('start_expedition'); },
     async startExpedition2() { await this.postAction('start_expedition2'); },
     async finishExpedition() { if (this.interval) clearInterval(this.interval); await this.postAction('finish_expedition'); },
@@ -160,7 +160,7 @@ export const gameActionMethods = {
     async researchAlienSlot3() { await this.postAction('research_alien_slot_3'); },
     async researchSecretMine() { await this.postAction('research_secret_crystal_mine'); },
     async upgradeSecretMine() { await this.postAction('upgrade_secret_crystal_mine'); },
-    async buyDrone() { if (this.displayCrystal < 250) return alert('Nedostatek krystalĹŻ!'); await this.postAction('buy_drone'); },
+    async buyDrone() { if (this.displayCrystal < 250) return alert('Nedostatek krystalů!'); await this.postAction('buy_drone'); },
     async collectDrone() { await this.postAction('collect_drone'); },
 
     async upgrade(type) {
@@ -170,7 +170,7 @@ export const gameActionMethods = {
     },
 
     async upgradeRocketWorkshop() {
-        if (this.displayIron < 1000000) return alert('Nedostatek Ĺľeleza (1 000 000 Fe)!');
+        if (this.displayIron < 1000000) return alert('Nedostatek železa (1 000 000 Fe)!');
         await this.postAction('upgrade_rocket_workshop');
     },
 
@@ -191,7 +191,7 @@ export const gameActionMethods = {
         const modalText = document.getElementById('modal-text');
         const modalImgContainer = document.getElementById('modal-image-container');
         const isMultiple = Array.isArray(data.parts) && data.parts.length > 1;
-        modalTitle.innerText = isMultiple ? 'NovĂ© dĂ­ly zĂ­skĂˇny!' : 'NovĂ˝ dĂ­l zĂ­skĂˇn!';
+        modalTitle.innerText = isMultiple ? 'Nové díly získány!' : 'Nový díl získán!';
         modalText.innerText = data.part_label;
         modalImgContainer.innerHTML = '';
         modalImgContainer.style.display = 'flex';

@@ -24,7 +24,7 @@ export const vehicleViewMethods = {
                 document.getElementById('vehicle-hp-val').innerText = Math.floor(this.vehicleHP);
                 document.getElementById('vehicle-hp-bar').style.width = `${this.vehicleHP}%`;
                 document.getElementById('vehicle-crystals').innerText = Math.floor(this.vehicleCrystals);
-                document.getElementById('vehicle-status-text').innerText = this.planet.vehicle_status === 'exploring' ? 'đź›°ď¸Ź ProbĂ­hĂˇ prĹŻzkum...' : 'đźš€ Vozidlo se vracĂ­...';
+                document.getElementById('vehicle-status-text').innerText = this.planet.vehicle_status === 'exploring' ? '🛰️ Probíhá průzkum...' : '🚀 Vozidlo se vrací...';
                 document.getElementById('vehicle-hp-bar').style.background = this.vehicleHP < 30 ? '#ff4a4a' : '#28a745';
                 document.getElementById('recall-btn').classList.toggle('hidden', this.planet.vehicle_status === 'returning');
             }
@@ -56,7 +56,7 @@ export const vehicleViewMethods = {
                     document.getElementById('vehicle2-hp-val').innerText = Math.floor(this.vehicle2HP);
                     document.getElementById('vehicle2-hp-bar').style.width = `${this.vehicle2HP}%`;
                     document.getElementById('vehicle2-crystals').innerText = Math.floor(this.vehicle2Crystals);
-                    document.getElementById('vehicle2-status-text').innerText = this.planet.vehicle2_status === 'exploring' ? 'đź›°ď¸Ź ProbĂ­hĂˇ prĹŻzkum...' : 'đźš€ Vozidlo se vracĂ­...';
+                    document.getElementById('vehicle2-status-text').innerText = this.planet.vehicle2_status === 'exploring' ? '🛰️ Probíhá průzkum...' : '🚀 Vozidlo se vrací...';
                     document.getElementById('vehicle2-hp-bar').style.background = this.vehicle2HP < 30 ? '#ff4a4a' : '#28a745';
                     document.getElementById('recall2-btn').classList.toggle('hidden', this.planet.vehicle2_status === 'returning');
                 }

@@ -4,10 +4,10 @@ export function createAuth(game) {
 
         toggleMode() {
             this.isSignUp = !this.isSignUp;
-            document.getElementById('auth-title').innerText = this.isSignUp ? 'Registrace do Kolonie' : 'PĹ™ihlĂˇĹˇenĂ­ na Palubu';
-            document.getElementById('auth-submit').innerText = this.isSignUp ? 'ZaloĹľit kolonii' : 'Vstoupit do hry';
-            document.getElementById('auth-switch-text').innerText = this.isSignUp ? 'UĹľ mĂˇĹˇ ĂşÄŤet?' : 'JeĹˇtÄ› nemĂˇĹˇ kolonii?';
-            document.getElementById('auth-switch-btn').innerText = this.isSignUp ? 'PĹ™ihlĂˇsit se' : 'Zaregistrovat se';
+            document.getElementById('auth-title').innerText = this.isSignUp ? 'Registrace do Kolonie' : 'Přihlášení na palubu';
+            document.getElementById('auth-submit').innerText = this.isSignUp ? 'Založit kolonii' : 'Vstoupit do hry';
+            document.getElementById('auth-switch-text').innerText = this.isSignUp ? 'Už máš účet?' : 'Ještě nemáš kolonii?';
+            document.getElementById('auth-switch-btn').innerText = this.isSignUp ? 'Přihlásit se' : 'Zaregistrovat se';
             document.getElementById('playerName-group').classList.toggle('hidden', !this.isSignUp);
         },
 

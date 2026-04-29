@@ -11,10 +11,10 @@ export const researchViewMethods = {
                 btn.disabled = this.displayCopper < 5000 || totalColored < 10000;
                 const labDesc = document.getElementById('lab-research-desc');
                 if (totalColored < 10000) {
-                    labDesc.innerText = `VyĹľaduje 10 000 barevnĂ©ho materiĂˇlu (mĂˇĹˇ ${Math.floor(totalColored)}).`;
+                    labDesc.innerText = `Vyžaduje 10 000 barevného materiálu (máš ${Math.floor(totalColored)}).`;
                     labDesc.style.color = '#ff4a4a';
                 } else {
-                    labDesc.innerText = 'Odemkne vĂ˝robu zkumavek pro pokroÄŤilĂ˝ vĂ˝zkum. VyĹľaduje 2 barvy a dosaĹľenĂ­ souÄŤtu vĹˇech barevnĂ˝ch materiĂˇlĹŻ v hodnotÄ› 10 000.';
+                    labDesc.innerText = 'Odemkne výrobu zkumavek pro pokročilý výzkum. Vyžaduje 2 barvy a dosažení součtu všech barevných materiálů v hodnotě 10 000.';
                     labDesc.style.color = '#888';
                 }
             } else {
@@ -86,7 +86,7 @@ export const researchViewMethods = {
                 const canAfford = this.displayTubes >= 25000 && this.displayIron >= 2000000 && this.displayCopper >= 25000;
                 const btn = document.getElementById('research-alien-slot-3-btn');
                 btn.disabled = !canAfford || minesAt50 < 2;
-                btn.innerText = minesAt50 < 2 ? 'Vyzkoumat (VyĹľaduje 2 doly Lvl 50)' : 'Vyzkoumat (25k zkum., 2M Fe, 25k Cu)';
+                btn.innerText = minesAt50 < 2 ? 'Vyzkoumat (Vyžaduje 2 doly Lvl 50)' : 'Vyzkoumat (25k zkum., 2M Fe, 25k Cu)';
             } else {
                 resAlienSlot3.classList.add('hidden');
             }
@@ -95,7 +95,7 @@ export const researchViewMethods = {
             if (this.planet.research_alien_slot_3 && !this.planet.research_secret_crystal_mine) {
                 resSecretMine.classList.remove('hidden');
                 document.getElementById('research-secret-mine-btn').disabled = this.displayTubes < 30000;
-                document.getElementById('secret-mine-note-text').innerText = `JiĹľ objeveno ${this.planet.secret_mine_discovered_count} veliteli.`;
+                document.getElementById('secret-mine-note-text').innerText = `Již objeveno ${this.planet.secret_mine_discovered_count} veliteli.`;
             } else {
                 resSecretMine.classList.add('hidden');
             }
@@ -169,10 +169,10 @@ export const researchViewMethods = {
         const maxSlots = this.planet.research_alien_slot_3 ? 3 : 2;
 
         if (count >= maxSlots) {
-            info.innerHTML = `<p style="color: #28a745;"><strong>VĹˇechny vĂ˝zkumnĂ© sloty (${count}/${maxSlots}) jsou obsazeny.</strong></p>`;
+            info.innerHTML = `<p style="color: #28a745;"><strong>Všechny výzkumné sloty (${count}/${maxSlots}) jsou obsazeny.</strong></p>`;
         } else {
             const cost = count === 0 ? 100 : (count === 1 ? 2000 : 10000);
-            info.innerHTML = `<p>K dispozici mĂˇĹˇ slot ÄŤ. <strong>${count + 1}</strong> za <strong>${cost} krystalĹŻ</strong>.</p>`;
+            info.innerHTML = `<p>K dispozici máš slot č. <strong>${count + 1}</strong> za <strong>${cost} krystalů</strong>.</p>`;
         }
 
         options.innerHTML = '';
@@ -183,7 +183,7 @@ export const researchViewMethods = {
             btn.innerText = this.colorNames[color];
             if (isResearched) {
                 btn.disabled = true;
-                btn.innerText += ' (VyzkoumĂˇno)';
+                btn.innerText += ' (Vyzkoumáno)';
             } else if (count >= maxSlots) {
                 btn.disabled = true;
             } else {

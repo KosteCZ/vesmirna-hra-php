@@ -25,12 +25,12 @@ export const rocketPartImages = {
 };
 
 export const colorNames = {
-    yellow: 'Ĺ˝lutĂ˝',
-    red: 'ÄŚervenĂ˝',
-    blue: 'ModrĂ˝',
-    green: 'ZelenĂ˝',
-    orange: 'OranĹľovĂ˝',
-    purple: 'FialovĂ˝',
+    yellow: 'Žlutý',
+    red: 'Červený',
+    blue: 'Modrý',
+    green: 'Zelený',
+    orange: 'Oranžový',
+    purple: 'Fialový',
 };
 
 export const colorCodes = {

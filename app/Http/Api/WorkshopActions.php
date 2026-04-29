@@ -5,11 +5,11 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
     if ($action === 'research_rocket_workshop') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'Musis mit Pokrocilou laborator!']);
+            echo json_encode(['error' => 'Musíš mít Pokročilou laboratoř!']);
             return true;
         }
         if ($planet['research_rocket_workshop']) {
-            echo json_encode(['error' => 'Raketova dilna je jiz postavena!']);
+            echo json_encode(['error' => 'Raketová dílna je již postavena!']);
             return true;
         }
 
@@ -26,11 +26,11 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_rocket_workshop') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_rocket_workshop']) {
-            echo json_encode(['error' => 'Raketova dilna neni postavena!']);
+            echo json_encode(['error' => 'Raketová dílna není postavena!']);
             return true;
         }
         if (($planet['rocket_workshop_level'] ?? 1) >= 2) {
-            echo json_encode(['error' => 'Raketova dilna je jiz na maximalni urovni!']);
+            echo json_encode(['error' => 'Raketová dílna je již na maximální úrovni!']);
             return true;
         }
 
@@ -38,7 +38,7 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
             upgradeRocketWorkshop($db, $userId, ROCKET_WORKSHOP_UPGRADE_COST, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => 'Nedostatek zeleza (1 000 000 Fe)!']);
+            echo json_encode(['error' => 'Nedostatek železa (1 000 000 Fe)!']);
         }
 
         return true;
@@ -47,7 +47,7 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
     if ($action === 'start_rocket_workshop_production') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_rocket_workshop']) {
-            echo json_encode(['error' => 'Raketova dilna neni postavena!']);
+            echo json_encode(['error' => 'Raketová dílna není postavena!']);
             return true;
         }
 
@@ -57,22 +57,22 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
         $readyCol = ($mode === 2) ? 'rocket_workshop_2_ready_at' : 'rocket_workshop_ready_at';
 
         if ($mode === 2 && ($planet['rocket_workshop_level'] ?? 1) < 2) {
-            echo json_encode(['error' => 'Musis vylepsit dilnu pro tento typ vyroby!']);
+            echo json_encode(['error' => 'Musíš vylepšit dílnu pro tento typ výroby!']);
             return true;
         }
 
         $rocketParts = $planet['rocket_parts'] ?? getDefaultRocketPartsInventory();
         $availableParts = array_filter($rocketParts, static fn ($count) => $count < 10);
         if (count($availableParts) === 0) {
-            echo json_encode(['error' => 'Uz mas vyrobeno vse 10x, dalsi vyroba neni mozna.']);
+            echo json_encode(['error' => 'Už máš vyrobeno vše 10x, další výroba není možná.']);
             return true;
         }
         if (($planet[$statusCol] ?? 'idle') === 'producing') {
-            echo json_encode(['error' => 'V tomto slotu vyroba uz probiha!']);
+            echo json_encode(['error' => 'V tomto slotu výroba už probíhá!']);
             return true;
         }
         if (($planet[$statusCol] ?? 'idle') === 'ready') {
-            echo json_encode(['error' => 'Nejdriv si vyzvedni hotovy vytvor v tomto slotu.']);
+            echo json_encode(['error' => 'Nejdřív si vyzvedni hotový výtvor v tomto slotu.']);
             return true;
         }
 
@@ -105,7 +105,7 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
     if ($action === 'collect_rocket_workshop_product') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_rocket_workshop']) {
-            echo json_encode(['error' => 'Raketova dilna neni postavena!']);
+            echo json_encode(['error' => 'Raketová dílna není postavena!']);
             return true;
         }
 
@@ -115,7 +115,7 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
         $readyCol = ($slot === 2) ? 'rocket_workshop_2_ready_at' : 'rocket_workshop_ready_at';
 
         if (($planet[$statusCol] ?? 'idle') !== 'ready') {
-            echo json_encode(['error' => 'V tomto slotu zatim neni nic k vyzvednuti.']);
+            echo json_encode(['error' => 'V tomto slotu zatím není nic k vyzvednutí.']);
             return true;
         }
 
@@ -141,7 +141,7 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
 
         if (count($selectedParts) === 0) {
             resetRocketWorkshopSlotByPlanetId($db, (int) $planet['id'], $statusCol, $startCol, $readyCol, date('Y-m-d H:i:s'));
-            echo json_encode(['error' => 'Uz mas vyrobeno vse 10x, dalsi vyroba neni mozna.']);
+            echo json_encode(['error' => 'Už máš vyrobeno vše 10x, další výroba není možná.']);
             return true;
         }
 

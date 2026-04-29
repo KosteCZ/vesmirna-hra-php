@@ -11,7 +11,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade') {
         $type = $_POST['type'] ?? '';
         if (!in_array($type, ALLOWED_UPGRADE_TYPES, true)) {
-            echo json_encode(['error' => 'Neplatny typ vylepseni!']);
+            echo json_encode(['error' => 'Neplatný typ vylepšení!']);
             return true;
         }
 
@@ -35,7 +35,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
         $cost = UPGRADE_COST_MULTIPLIER * $currentLevel;
         if ($planet['iron_amount'] >= $cost) {
             if ($type === 'warehouse' && $currentLevel >= 200) {
-                echo json_encode(['error' => 'Sklad nelze dÄ‚Ë‡le vylepÄąË‡ovat za ÄąÄľelezo (max Lvl 200)!']);
+                echo json_encode(['error' => 'Sklad nelze dále vylepšovat za železo (max Lvl 200)!']);
                 return true;
             }
 
@@ -45,7 +45,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
 
             echo json_encode(['success' => true, 'planet' => getPlanetData($userId, $db)]);
         } else {
-            echo json_encode(['error' => 'Nedostatek ÄąÄľeleza!']);
+            echo json_encode(['error' => 'Nedostatek železa!']);
         }
 
         return true;
@@ -54,7 +54,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_warehouse_copper_eff') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_warehouse_copper']) {
-            echo json_encode(['error' => 'VÄ‚Ëťzkum nenÄ‚Â­ dokonĂ„Ĺ¤en!']);
+            echo json_encode(['error' => 'Výzkum není dokončen!']);
             return true;
         }
 
@@ -63,7 +63,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
             upgradeWarehouseCopperEfficiency($db, $userId, $cost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => "Nedostatek mĂ„â€şdi ({$cost} Cu)!"]);
+            echo json_encode(['error' => "Nedostatek mědi ({$cost} Cu)!"]);
         }
 
         return true;
@@ -72,7 +72,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_lab') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'LaboratoÄąâ„˘ nenÄ‚Â­ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Laboratoř není vyzkoumána!']);
             return true;
         }
 
@@ -93,7 +93,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_lab_storage') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_advanced_lab']) {
-            echo json_encode(['error' => 'LaboratoÄąâ„˘ nenÄ‚Â­ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Laboratoř není vyzkoumána!']);
             return true;
         }
 
@@ -114,7 +114,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_copper_mine') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_copper']) {
-            echo json_encode(['error' => 'MĂ„â€şĂ„Ĺą nenÄ‚Â­ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Měď není vyzkoumána!']);
             return true;
         }
 
@@ -135,7 +135,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_copper_warehouse') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_copper']) {
-            echo json_encode(['error' => 'MĂ„â€şĂ„Ĺą nenÄ‚Â­ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Měď není vyzkoumána!']);
             return true;
         }
 
@@ -156,14 +156,14 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_alien_mine') {
         $color = $_POST['color'] ?? '';
         if (!in_array($color, ALLOWED_COLORS, true)) {
-            echo json_encode(['error' => 'Neplatna barva!']);
+            echo json_encode(['error' => 'Neplatná barva!']);
             return true;
         }
 
         $planet = getPlanetData($userId, $db);
         $researched = $planet['researched_colors'] ?? [];
         if (!in_array($color, $researched, true)) {
-            echo json_encode(['error' => 'Tato barva nenÄ‚Â­ vyzkoumÄ‚Ë‡na!']);
+            echo json_encode(['error' => 'Tato barva není vyzkoumána!']);
             return true;
         }
 
@@ -188,7 +188,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
     if ($action === 'upgrade_secret_crystal_mine') {
         $planet = getPlanetData($userId, $db);
         if (!$planet['research_secret_crystal_mine']) {
-            echo json_encode(['error' => 'VÄ‚Ëťzkum nenÄ‚Â­ hotov!']);
+            echo json_encode(['error' => 'Výzkum není hotov!']);
             return true;
         }
 
@@ -198,7 +198,7 @@ function handlePlanetAction(string $action, int $userId, PDO $db): bool
             upgradeSecretCrystalMine($db, $userId, $cost, date('Y-m-d H:i:s'));
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['error' => "Nedostatek ÄąÄľeleza ({$cost})!"]);
+            echo json_encode(['error' => "Nedostatek železa ({$cost})!"]);
         }
 
         return true;

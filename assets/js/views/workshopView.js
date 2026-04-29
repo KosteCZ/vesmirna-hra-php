@@ -89,7 +89,7 @@ export const workshopViewMethods = {
         const collectBtn = document.getElementById(`ws-slot${id}-collect-btn`);
 
         if (data.status === 'ready') {
-            statusEl.innerText = 'Hotovo! MĹŻĹľeĹˇ vyzvednout.';
+            statusEl.innerText = 'Hotovo! Můžeš vyzvednout.';
             statusEl.style.color = '#28a745';
             timerWrap.classList.add('hidden');
             startBtn.classList.add('hidden');
@@ -98,12 +98,12 @@ export const workshopViewMethods = {
             const readyAt = new Date(data.readyAt.replace(' ', 'T') + 'Z');
             const remaining = (readyAt.getTime() - Date.now()) / 1000;
             if (remaining <= 0) {
-                statusEl.innerText = 'DokonÄŤovĂˇnĂ­...';
+                statusEl.innerText = 'Dokončování...';
                 if (!this.refreshPromise) this.refreshDashboard();
                 startBtn.classList.add('hidden');
                 collectBtn.classList.add('hidden');
             } else {
-                statusEl.innerText = 'ProbĂ­hĂˇ vĂ˝roba...';
+                statusEl.innerText = 'Probíhá výroba...';
                 statusEl.style.color = '#888';
                 timerWrap.classList.remove('hidden');
                 timerEl.innerText = this.formatDuration(remaining);
@@ -112,7 +112,7 @@ export const workshopViewMethods = {
                 collectBtn.classList.add('hidden');
             }
         } else {
-            statusEl.innerText = 'PĹ™ipraveno';
+            statusEl.innerText = 'Připraveno';
             statusEl.style.color = '#888';
             timerWrap.classList.add('hidden');
             startBtn.classList.remove('hidden');

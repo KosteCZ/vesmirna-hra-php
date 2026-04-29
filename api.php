@@ -30,7 +30,7 @@ const SECRET_MINE_UPGRADE_BASE_IRON = 1000000;
 const SECRET_MINE_UPGRADE_STEP_IRON = 50000;
 
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['error' => 'NepĹ™ihlĂˇĹˇen!']);
+    echo json_encode(['error' => 'Nepřihlášen!']);
     exit;
 }
 
@@ -52,7 +52,7 @@ try {
         }
     }
 
-    echo json_encode(['error' => 'Neznama akce!']);
+    echo json_encode(['error' => 'Neznámá akce!']);
 } catch (Exception $e) {
     echo json_encode(['error' => 'Chyba serveru: ' . $e->getMessage()]);
 }
