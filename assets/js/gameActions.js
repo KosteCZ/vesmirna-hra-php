@@ -1,9 +1,13 @@
 export const gameActionMethods = {
     showDashboard(user) {
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('user-info').classList.remove('hidden');
-        document.getElementById('player-name').innerText = user.player_name;
-        document.getElementById('dashboard-section').classList.remove('hidden');
+        const authSect = document.getElementById('auth-section');
+        if (authSect) authSect.classList.add('hidden');
+        const userInfo = document.getElementById('user-info');
+        if (userInfo) userInfo.classList.remove('hidden');
+        const playerName = document.getElementById('player-name');
+        if (playerName) playerName.innerText = user.player_name;
+        const dashSect = document.getElementById('dashboard-section');
+        if (dashSect) dashSect.classList.remove('hidden');
         this.fetchPlanet();
         this.fetchLeaderboard();
         this.fetchGlobalStats();
@@ -76,6 +80,7 @@ export const gameActionMethods = {
             bar.classList.remove('hidden');
             const eta = new Date(etaStr.replace(' ', 'T') + 'Z');
             const updateTimer = () => {
+                if (!textEl) return;
                 const diff = eta.getTime() - Date.now();
                 if (diff <= 0) {
                     textEl.innerText = 'Bouře právě probíhá!';

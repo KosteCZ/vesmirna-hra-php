@@ -10,6 +10,12 @@ export const workshopViewMethods = {
     updateRocketWorkshopUI() {
         const section = document.getElementById('rocket-workshop-section');
         if (!section || !this.planet) return;
+        
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
+
         if (!this.planet.research_rocket_workshop) {
             section.classList.add('hidden');
             return;
@@ -21,8 +27,8 @@ export const workshopViewMethods = {
         const allCompleted = Boolean(this.planet.rocket_parts_all_completed);
         const level = this.planet.rocket_workshop_level || 1;
 
-        document.getElementById('rocket-workshop-lvl').innerText = level;
-        document.getElementById('rocket-parts-total').innerText = total;
+        setVal('rocket-workshop-lvl', level);
+        setVal('rocket-parts-total', total);
 
         const upgradeBtn = document.getElementById('rocket-workshop-upgrade-btn');
         const partsList = document.getElementById('rocket-parts-list');
@@ -54,10 +60,12 @@ export const workshopViewMethods = {
             });
         }
 
-        finishedEl.classList.toggle('hidden', !allCompleted);
+        if (finishedEl) finishedEl.classList.toggle('hidden', !allCompleted);
         const isSlot1Idle = (this.planet.rocket_workshop_status || 'idle') === 'idle';
-        upgradeBtn.classList.toggle('hidden', level >= 2 || !isSlot1Idle);
-        upgradeBtn.disabled = this.displayIron < 1000000;
+        if (upgradeBtn) {
+            upgradeBtn.classList.toggle('hidden', level >= 2 || !isSlot1Idle);
+            upgradeBtn.disabled = this.displayIron < 1000000;
+        }
 
         this.updateWorkshopSlot(1, {
             status: this.planet.rocket_workshop_status,
@@ -89,35 +97,43 @@ export const workshopViewMethods = {
         const collectBtn = document.getElementById(`ws-slot${id}-collect-btn`);
 
         if (data.status === 'ready') {
-            statusEl.innerText = 'Hotovo! Můžeš vyzvednout.';
-            statusEl.style.color = '#28a745';
-            timerWrap.classList.add('hidden');
-            startBtn.classList.add('hidden');
-            collectBtn.classList.remove('hidden');
+            if (statusEl) {
+                statusEl.innerText = 'Hotovo! Můžeš vyzvednout.';
+                statusEl.style.color = '#28a745';
+            }
+            if (timerWrap) timerWrap.classList.add('hidden');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (collectBtn) collectBtn.classList.remove('hidden');
         } else if (data.status === 'producing' && data.readyAt) {
             const readyAt = new Date(data.readyAt.replace(' ', 'T') + 'Z');
             const remaining = (readyAt.getTime() - Date.now()) / 1000;
             if (remaining <= 0) {
-                statusEl.innerText = 'Dokončování...';
+                if (statusEl) statusEl.innerText = 'Dokončování...';
                 if (!this.refreshPromise) this.refreshDashboard();
-                startBtn.classList.add('hidden');
-                collectBtn.classList.add('hidden');
+                if (startBtn) startBtn.classList.add('hidden');
+                if (collectBtn) collectBtn.classList.add('hidden');
             } else {
-                statusEl.innerText = 'Probíhá výroba...';
-                statusEl.style.color = '#888';
-                timerWrap.classList.remove('hidden');
-                timerEl.innerText = this.formatDuration(remaining);
-                progressEl.style.width = `${Math.min(100, ((data.duration - remaining) / data.duration) * 100)}%`;
-                startBtn.classList.add('hidden');
-                collectBtn.classList.add('hidden');
+                if (statusEl) {
+                    statusEl.innerText = 'Probíhá výroba...';
+                    statusEl.style.color = '#888';
+                }
+                if (timerWrap) timerWrap.classList.remove('hidden');
+                if (timerEl) timerEl.innerText = this.formatDuration(remaining);
+                if (progressEl) progressEl.style.width = `${Math.min(100, ((data.duration - remaining) / data.duration) * 100)}%`;
+                if (startBtn) startBtn.classList.add('hidden');
+                if (collectBtn) collectBtn.classList.add('hidden');
             }
         } else {
-            statusEl.innerText = 'Připraveno';
-            statusEl.style.color = '#888';
-            timerWrap.classList.add('hidden');
-            startBtn.classList.remove('hidden');
-            startBtn.disabled = this.displayTubes < data.cost || data.allCompleted;
-            collectBtn.classList.add('hidden');
+            if (statusEl) {
+                statusEl.innerText = 'Připraveno';
+                statusEl.style.color = '#888';
+            }
+            if (timerWrap) timerWrap.classList.add('hidden');
+            if (startBtn) {
+                startBtn.classList.remove('hidden');
+                startBtn.disabled = this.displayTubes < data.cost || data.allCompleted;
+            }
+            if (collectBtn) collectBtn.classList.add('hidden');
         }
     },
 };

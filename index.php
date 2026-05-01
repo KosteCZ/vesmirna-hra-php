@@ -140,8 +140,9 @@ session_start();
                         <span class="label">Energie</span>
                         <span class="value" id="display-energy">0</span>
                         <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">
-                            Netto: <span id="energy-net" style="color: #28a745;">+0.00</span>/s<br>
-                            Spotřeba: <span id="energy-cons">0.00</span>/s
+                            Výroba: <span id="energy-prod">0.00</span>/s<br>
+                            Spotřeba: <span id="energy-cons">0.00</span>/s<br>
+                            Celkem: <span id="energy-net" style="color: #28a745;">+0.00</span>/s
                         </div>
                     </div>
                 </div>
@@ -611,7 +612,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.05.01.0708
+        v2026.05.01.0840
     </footer>
 
     <!-- Workshop Item Modal -->

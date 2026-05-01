@@ -4,27 +4,35 @@ export function createAuth(game) {
 
         toggleMode() {
             this.isSignUp = !this.isSignUp;
-            document.getElementById('auth-title').innerText = this.isSignUp ? 'Registrace do Kolonie' : 'Přihlášení na palubu';
-            document.getElementById('auth-submit').innerText = this.isSignUp ? 'Založit kolonii' : 'Vstoupit do hry';
-            document.getElementById('auth-switch-text').innerText = this.isSignUp ? 'Už máš účet?' : 'Ještě nemáš kolonii?';
-            document.getElementById('auth-switch-btn').innerText = this.isSignUp ? 'Přihlásit se' : 'Zaregistrovat se';
-            document.getElementById('playerName-group').classList.toggle('hidden', !this.isSignUp);
+            const title = document.getElementById('auth-title');
+            if (title) title.innerText = this.isSignUp ? 'Registrace do Kolonie' : 'Přihlášení na palubu';
+            const submit = document.getElementById('auth-submit');
+            if (submit) submit.innerText = this.isSignUp ? 'Založit kolonii' : 'Vstoupit do hry';
+            const switchText = document.getElementById('auth-switch-text');
+            if (switchText) switchText.innerText = this.isSignUp ? 'Už máš účet?' : 'Ještě nemáš kolonii?';
+            const switchBtn = document.getElementById('auth-switch-btn');
+            if (switchBtn) switchBtn.innerText = this.isSignUp ? 'Přihlásit se' : 'Zaregistrovat se';
+            const playerNameGroup = document.getElementById('playerName-group');
+            if (playerNameGroup) playerNameGroup.classList.toggle('hidden', !this.isSignUp);
         },
 
         async init() {
             const res = await fetch('auth.php?action=status');
             const data = await res.json();
-            document.getElementById('loading-section').classList.add('hidden');
+            const loader = document.getElementById('loading-section');
+            if (loader) loader.classList.add('hidden');
 
             const stored = localStorage.getItem('game_use_images');
             const useImages = stored === null ? true : stored === 'true';
-            document.getElementById('graphics-toggle').checked = useImages;
+            const graphicsToggle = document.getElementById('graphics-toggle');
+            if (graphicsToggle) graphicsToggle.checked = useImages;
             game.useImages = useImages;
 
             if (data.authenticated) {
                 game.showDashboard(data.user);
             } else {
-                document.getElementById('auth-section').classList.remove('hidden');
+                const authSect = document.getElementById('auth-section');
+                if (authSect) authSect.classList.remove('hidden');
             }
         },
 
