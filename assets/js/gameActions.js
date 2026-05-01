@@ -55,11 +55,82 @@ export const gameActionMethods = {
             }
         }
 
+        this.checkGameStateEvents();
+        this.updateGlobalAlert();
         this.startLoop();
         this.refreshIcons();
         this.updateUI();
         this.updateResearchUI();
         this.updateAlienUI();
+    },
+
+    updateGlobalAlert() {
+        const bar = document.getElementById('global-alert-bar');
+        const textEl = document.getElementById('storm-countdown-text');
+        if (!bar || !this.planet) return;
+
+        const state = this.planet.game_state;
+        const etaStr = this.planet.sand_storm_eta;
+
+        if ((state === 'SAND_STORM_COMING_1' || state === 'SAND_STORM_COMING_2') && etaStr) {
+            bar.classList.remove('hidden');
+            const eta = new Date(etaStr.replace(' ', 'T') + 'Z');
+            const updateTimer = () => {
+                const diff = eta.getTime() - Date.now();
+                if (diff <= 0) {
+                    textEl.innerText = 'Bouře právě probíhá!';
+                    return;
+                }
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                textEl.innerText = `Bouře za ${days}d ${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            };
+            updateTimer();
+            if (this.globalTimerInterval) clearInterval(this.globalTimerInterval);
+            this.globalTimerInterval = setInterval(updateTimer, 1000);
+        } else {
+            bar.classList.add('hidden');
+            if (this.globalTimerInterval) clearInterval(this.globalTimerInterval);
+        }
+    },
+
+    showSandStormEvent() {
+        this.showEventModal(
+            'Blížící se písečná bouře',
+            'resources/events/event-sand-storm.png',
+            'Radary zjistily, že se k tvojí základně pomalu blíží písečná bouře. Pokuste se s ostatními veliteli co nejdřív dokončit výstavbu vesmírné brány a zároveň vyrob všechny potřebné části pro výstavbu rakety, aby bylo možné opustit tuto planetu a proletět bránou zpátky domů.'
+        );
+    },
+
+    checkGameStateEvents() {
+        if (!this.planet || !this.planet.game_state) return;
+
+        const state = this.planet.game_state;
+        const seenStates = JSON.parse(localStorage.getItem('seen_game_states') || '[]');
+
+        if (state === 'SAND_STORM_COMING_1' && !seenStates.includes('SAND_STORM_COMING_1')) {
+            this.showEventModal(
+                'Blížící se písečná bouře',
+                'resources/events/event-sand-storm.png',
+                'Radary zjistily, že se k tvojí základně pomalu blíží písečná bouře. Pokuste se s ostatními veliteli co nejdřív dokončit výstavbu vesmírné brány a zároveň vyrob všechny potřebné části pro výstavbu rakety, aby bylo možné opustit tuto planetu a proletět bránou zpátky domů.'
+            );
+            seenStates.push('SAND_STORM_COMING_1');
+            localStorage.setItem('seen_game_states', JSON.stringify(seenStates));
+        }
+    },
+
+    showEventModal(title, image, text) {
+        const titleEl = document.getElementById('event-title');
+        const imgEl = document.getElementById('event-image');
+        const textEl = document.getElementById('event-text');
+        const modal = document.getElementById('event-modal');
+
+        if (titleEl) titleEl.innerText = title;
+        if (imgEl) imgEl.src = image;
+        if (textEl) textEl.innerText = text;
+        if (modal) modal.classList.remove('hidden');
     },
 
     async fetchLeaderboard() {

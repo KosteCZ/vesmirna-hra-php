@@ -21,6 +21,13 @@ function initializeDatabase(PDO $db): void {
         FOREIGN KEY(user_id) REFERENCES users(id)
     )");
 
+    $db->exec("CREATE TABLE IF NOT EXISTS global_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    )");
+
+    $db->exec("INSERT OR IGNORE INTO global_settings (key, value) VALUES ('game_state', 'COLONIZATION')");
+
     ensureUserColumns($db);
     ensurePlanetColumns($db);
 }

@@ -279,6 +279,32 @@ input {
 .no-planet { text-align: center; padding: 50px; }
 .hidden { display: none !important; }
 
+.global-alert {
+  background: rgba(255, 74, 74, 0.15);
+  border: 1px solid #ff4a4a;
+  color: #ff4a4a;
+  padding: 10px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  font-weight: bold;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  display: inline-flex;
+  transition: transform 0.1s;
+}
+
+.icon-btn:hover { transform: scale(1.2); }
+
 .hangar-view {
     display: flex;
     gap: 20px;
