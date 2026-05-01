@@ -13,6 +13,9 @@ export const gameSimulationMethods = {
             }
             extraEnergyNeeded += (this.planet.mine_copper_lvl * 0.5);
             if (this.planet.research_advanced_lab) extraEnergyNeeded += (this.planet.lab_level * 1.5);
+            if (this.planet.research_secret_crystal_mine && this.planet.secret_crystal_mine_level > 0) {
+                extraEnergyNeeded += (this.planet.secret_crystal_mine_level * 10);
+            }
 
             const totalEnergyNeeded = (ironProd * 0.5) + extraEnergyNeeded;
             const energyTick = energyProd / 10;

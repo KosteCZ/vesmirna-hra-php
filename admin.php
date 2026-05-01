@@ -142,6 +142,7 @@ $rocketPartDefs = getRocketPartDefinitions();
                 <td class="<?= $p['lab_level'] > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['lab_level'] ?></td>
                 <td class="<?= $p['lab_storage_level'] > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['lab_storage_level'] ?></td>
                 <td class="<?= $p['rocket_workshop_level'] > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['rocket_workshop_level'] ?></td>
+                <td class="<?= ($p['secret_crystal_mine_level'] ?? 0) > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['secret_crystal_mine_level'] ?? 0 ?></td>
                 <td class="<?= $p['mine_yellow_lvl'] > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['mine_yellow_lvl'] ?></td>
                 <td class="<?= $p['mine_red_lvl'] > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['mine_red_lvl'] ?></td>
                 <td class="<?= $p['mine_blue_lvl'] > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['mine_blue_lvl'] ?></td>

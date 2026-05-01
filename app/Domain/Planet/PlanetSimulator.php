@@ -99,6 +99,10 @@ final class PlanetSimulator
             $droneStorage = min(100 * $droneMultiplier, $droneStorage + ($secondsElapsed * (1 / 300) * $droneMultiplier));
         }
 
+        checkGameStateTransitions($db);
+        $gameState = getGameState($db);
+        $sandStormEta = getGlobalSetting($db, 'sand_storm_eta');
+
         $rwStat1 = $planet['rocket_workshop_status'] ?? 'idle';
         $rwStat2 = $planet['rocket_workshop_2_status'] ?? 'idle';
         if (($planet['research_rocket_workshop'] ?? 0)) {
@@ -195,6 +199,7 @@ final class PlanetSimulator
             'last_updated' => date('Y-m-d H:i:s'),
             'iron_production' => $ironProd,
             'energy_production' => $energyProd,
+            'energy_consumption' => $energyNeeded,
             'iron_storage_limit' => $ironLimit,
             'copper_production' => $copperProd,
             'copper_storage_limit' => $copperLimit,
@@ -203,6 +208,8 @@ final class PlanetSimulator
             'alien_resources' => $newResData,
             'has_drone' => $planet['has_drone'] ?? 0,
             'drone_storage' => $droneStorage,
+            'game_state' => $gameState,
+            'sand_storm_eta' => $sandStormEta,
         ];
     }
 

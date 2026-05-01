@@ -115,6 +115,11 @@ session_start();
 
         <!-- Dashboard Section -->
         <div id="dashboard-section" class="dashboard hidden">
+            <div id="global-alert-bar" class="global-alert hidden">
+                <span id="storm-countdown-text"></span>
+                <button class="icon-btn" onclick="game.showSandStormEvent()" title="Připomenout událost">✉️</button>
+            </div>
+
             <!-- Resource Section -->
             <section class="resources">
                 <div class="res-card iron">
@@ -134,7 +139,10 @@ session_start();
                     <div class="res-data">
                         <span class="label">Energie</span>
                         <span class="value" id="display-energy">0</span>
-                        <span class="prod">+<span id="energy-prod">0</span>/s</span>
+                        <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">
+                            Netto: <span id="energy-net" style="color: #28a745;">+0.00</span>/s<br>
+                            Spotřeba: <span id="energy-cons">0.00</span>/s
+                        </div>
                     </div>
                 </div>
 
@@ -615,6 +623,18 @@ session_start();
             </div>
             <p id="modal-text" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 25px;"></p>
             <button onclick="document.getElementById('workshop-modal').classList.add('hidden')" style="background: #28a745;">Skvělé!</button>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="event-modal" class="modal hidden">
+        <div class="modal-content card" style="max-width: 500px;">
+            <h3 id="event-title">Mimořádná událost</h3>
+            <div id="event-image-container" style="margin: 20px 0; text-align: center;">
+                <img id="event-image" src="" alt="Event" style="max-width: 100%; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+            </div>
+            <p id="event-text" style="font-size: 1rem; line-height: 1.6; margin-bottom: 25px; text-align: left;"></p>
+            <button onclick="document.getElementById('event-modal').classList.add('hidden')" style="background: #007bff;">Rozumím!</button>
         </div>
     </div>
 

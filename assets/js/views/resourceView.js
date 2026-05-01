@@ -59,7 +59,20 @@ export const resourceViewMethods = {
         }
 
         document.getElementById('iron-prod').innerText = this.planet.iron_production.toFixed(2);
-        document.getElementById('energy-prod').innerText = this.planet.energy_production.toFixed(2);
+        
+        const energyProd = this.planet.energy_production || 0;
+        const energyCons = this.planet.energy_consumption || 0;
+        const energyNet = energyProd - energyCons;
+        const netEl = document.getElementById('energy-net');
+        const consEl = document.getElementById('energy-cons');
+        if (netEl) {
+            netEl.innerText = (energyNet >= 0 ? '+' : '') + energyNet.toFixed(2);
+            netEl.style.color = energyNet >= 0 ? '#28a745' : '#ff4a4a';
+        }
+        if (consEl) {
+            consEl.innerText = energyCons.toFixed(2);
+        }
+
         document.getElementById('iron-progress').style.width = `${Math.min(100, (this.displayIron / ironLimit) * 100)}%`;
 
         const tubesCard = document.getElementById('res-tubes-card');
