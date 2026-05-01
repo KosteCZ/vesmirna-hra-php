@@ -611,7 +611,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.04.30.0009
+        v2026.05.01.0708
     </footer>
 
     <!-- Workshop Item Modal -->
