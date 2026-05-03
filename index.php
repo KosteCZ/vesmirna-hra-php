@@ -645,7 +645,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.05.03.2352
+        v2026.05.04.0021
     </footer>
 
     <!-- Workshop Item Modal -->
@@ -668,7 +668,7 @@ session_start();
                 <img id="event-image" src="" alt="Event" style="max-width: 100%; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
             </div>
             <p id="event-text" style="font-size: 1rem; line-height: 1.6; margin-bottom: 25px; text-align: left;"></p>
-            <button onclick="document.getElementById('event-modal').classList.add('hidden')" style="background: #007bff;">Rozumím!</button>
+            <button onclick="game.closeEventModal()" style="background: #007bff;">Rozumím!</button>
         </div>
     </div>
 

@@ -143,16 +143,27 @@ export const gameActionMethods = {
         }
     },
 
-    showEventModal(title, image, text) {
+    showEventModal(title, image, text, nextEvent = null) {
         const titleEl = document.getElementById('event-title');
         const imgEl = document.getElementById('event-image');
         const textEl = document.getElementById('event-text');
         const modal = document.getElementById('event-modal');
 
+        this.eventModalQueue = nextEvent ? [nextEvent] : [];
         if (titleEl) titleEl.innerText = title;
         if (imgEl) imgEl.src = image;
         if (textEl) textEl.innerText = text;
         if (modal) modal.classList.remove('hidden');
+    },
+
+    closeEventModal() {
+        const modal = document.getElementById('event-modal');
+        if (modal) modal.classList.add('hidden');
+
+        const nextEvent = this.eventModalQueue?.shift();
+        if (nextEvent) {
+            this.showEventModal(nextEvent.title, nextEvent.image, nextEvent.text);
+        }
     },
 
     async fetchLeaderboard() {
@@ -281,7 +292,18 @@ export const gameActionMethods = {
 
     async launchRocket() {
         const data = await this.postAction('launch_rocket');
-        if (data && data.success) alert('Raketa odstartovala!');
+        if (!data || !data.success) return;
+
+        this.showEventModal(
+            '\u00dasp\u011b\u0161n\u00fd start rakety',
+            'resources/events/event-rocket-lunch.png',
+            'Raketa odstartovala d\u0159\u00edv, ne\u017e dorazila p\u00edse\u010dn\u00e1 bou\u0159e. Kolonie m\u011bla nam\u00e1le, ale p\u0159\u00edpravy se vyplatily a mise pr\u00e1v\u011b vstoupila do rozhoduj\u00edc\u00ed f\u00e1ze.',
+            {
+                title: 'Mise spln\u011bna',
+                image: 'resources/events/event-rocket-in-space.png',
+                text: 'Veliteli, dok\u00e1zal jsi n\u011bco mimo\u0159\u00e1dn\u00e9ho. Dokon\u010dil jsi raketu, pomohl aktivovat br\u00e1nu a zachr\u00e1nil celou misi. Pos\u00e1dka je v bezpe\u010d\u00ed a tvoje jm\u00e9no z\u016fstane zapsan\u00e9 mezi nejlep\u0161\u00edmi veliteli.'
+            }
+        );
     },
 
     async collectRocketWorkshopProduct(slot = 1) {

@@ -209,7 +209,7 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
             return true;
         }
 
-        $rocketParts = normalizeRocketPartsInventory($planet['rocket_parts'] ?? '');
+        $rocketParts = $planet['rocket_parts'] ?? getDefaultRocketPartsInventory();
         foreach ($rocketParts as $count) {
             if ($count < 10) {
                 echo json_encode(['error' => 'Raketa jeste nema vsechny soucastky.']);
