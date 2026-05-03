@@ -28,7 +28,11 @@ export const gameSimulationMethods = {
             if (this.planet.research_secret_crystal_mine && this.planet.secret_crystal_mine_level > 0) this.displayCrystal += (this.planet.secret_mine_production / 10) * prodFactor;
             if (this.planet.research_copper && this.displayCopper < this.planet.copper_storage_limit) this.displayCopper += (this.planet.copper_production / 10) * prodFactor;
             for (const color in this.planet.alien_resources) {
-                this.displayAlien[color] = Math.min(10000000, this.displayAlien[color] + (this.planet.alien_resources[color].prod / 10) * prodFactor);
+                const globalTotal = Number(this.planet.alien_global_totals?.[color]);
+                const serverAmount = Number(this.planet.alien_resources[color].amount || 0);
+                const otherPlayersAmount = Number.isFinite(globalTotal) ? Math.max(0, globalTotal - serverAmount) : 0;
+                const colorLimit = Math.max(0, 10000000 - otherPlayersAmount);
+                this.displayAlien[color] = Math.min(colorLimit, this.displayAlien[color] + (this.planet.alien_resources[color].prod / 10) * prodFactor);
             }
             if (this.planet.research_advanced_lab && this.displayTubes < this.planet.tube_storage_limit) this.displayTubes += (this.planet.tube_production / 10) * prodFactor;
 

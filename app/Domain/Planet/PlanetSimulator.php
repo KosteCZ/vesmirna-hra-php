@@ -15,13 +15,15 @@ final class PlanetSimulator
         $colors = ['yellow', 'red', 'blue', 'green', 'orange', 'purple'];
         $newResData = [];
         $totalExtraEnergyNeeded = 0;
+        $globalAlienTotals = calculateGlobalAlienTotals($db);
+
         foreach ($colors as $color) {
             $lvl = $planet["mine_{$color}_lvl"] ?? 0;
             $prod = $lvl * 0.02;
             $newResData[$color] = [
                 'lvl' => $lvl,
                 'prod' => $prod,
-                'amount' => $planet["res_{$color}"] ?? 0,
+                'amount' => (float) ($planet["res_{$color}"] ?? 0),
             ];
             $totalExtraEnergyNeeded += ($lvl * 0.3);
         }
@@ -77,7 +79,13 @@ final class PlanetSimulator
         $newCrystals = ($planet['crystal_amount'] ?? 0) + ($secondsElapsed * $secretMineProd * $productionFactor);
 
         foreach ($colors as $color) {
-            $newResData[$color]['amount'] = min(10000000, $newResData[$color]['amount'] + ($secondsElapsed * $newResData[$color]['prod'] * $productionFactor));
+            $currentAmount = $newResData[$color]['amount'];
+            $otherPlayersAmount = max(0, ($globalAlienTotals[$color] ?? 0) - $currentAmount);
+            $playerColorLimit = max(0, 10000000 - $otherPlayersAmount);
+            $newResData[$color]['amount'] = min(
+                $playerColorLimit,
+                $currentAmount + ($secondsElapsed * $newResData[$color]['prod'] * $productionFactor)
+            );
         }
 
         $vehicleState = self::simulateVehicleOne($db, $planet, $now, $newCrystals);
@@ -206,6 +214,7 @@ final class PlanetSimulator
             'drone_storage_limit' => $droneMultiplier * 100,
             'researched_colors' => $researchedArr,
             'alien_resources' => $newResData,
+            'alien_global_totals' => $globalAlienTotals,
             'has_drone' => $planet['has_drone'] ?? 0,
             'drone_storage' => $droneStorage,
             'game_state' => $gameState,
