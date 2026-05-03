@@ -155,5 +155,72 @@ function handleWorkshopAction(string $action, int $userId, PDO $db): bool
         return true;
     }
 
+    if ($action === 'buy_rocket_workshop_part') {
+        $planet = getPlanetData($userId, $db);
+        if (!$planet['research_rocket_workshop']) {
+            echo json_encode(['error' => 'RaketovĂˇ dĂ­lna nenĂ­ postavena!']);
+            return true;
+        }
+        if (($planet['game_state'] ?? '') !== 'SAND_STORM_COMING_2') {
+            echo json_encode(['error' => 'NouzovĂ˝ nĂˇkup dĂ­lĹŻ zatĂ­m nenĂ­ dostupnĂ˝!']);
+            return true;
+        }
+        if ($planet['crystal_amount'] < ROCKET_WORKSHOP_CRYSTAL_PART_COST) {
+            echo json_encode(['error' => 'Nedostatek krystalĹŻ (50 000)!']);
+            return true;
+        }
+
+        $rocketParts = $planet['rocket_parts'] ?? getDefaultRocketPartsInventory();
+        $availableKeys = [];
+        foreach ($rocketParts as $partKey => $partCount) {
+            if ($partCount < 10) {
+                $availableKeys[] = $partKey;
+            }
+        }
+
+        if (count($availableKeys) === 0) {
+            echo json_encode(['error' => 'UĹľ mĂˇĹˇ vyrobeno vĹˇe 10x, dalĹˇĂ­ nĂˇkup nenĂ­ moĹľnĂ˝.']);
+            return true;
+        }
+
+        $selectedKey = $availableKeys[random_int(0, count($availableKeys) - 1)];
+        $rocketParts[$selectedKey] = min(10, ($rocketParts[$selectedKey] ?? 0) + 1);
+        $partDefinitions = getRocketPartDefinitions();
+        $selectedPart = $partDefinitions[$selectedKey] ?? $selectedKey;
+
+        buyRocketWorkshopPart($db, $userId, ROCKET_WORKSHOP_CRYSTAL_PART_COST, json_encode($rocketParts), date('Y-m-d H:i:s'));
+
+        echo json_encode([
+            'success' => true,
+            'parts' => [$selectedPart],
+            'part_label' => $selectedPart,
+        ]);
+        return true;
+    }
+
+    if ($action === 'launch_rocket') {
+        $planet = getPlanetData($userId, $db);
+        if (($planet['game_state'] ?? '') !== 'SAND_STORM_COMING_2') {
+            echo json_encode(['error' => 'Raketa zatim nemuze odstartovat.']);
+            return true;
+        }
+        if (!isInterstellarGateActive($db)) {
+            echo json_encode(['error' => 'Mezihvezdna brana jeste neni aktivni.']);
+            return true;
+        }
+
+        $rocketParts = normalizeRocketPartsInventory($planet['rocket_parts'] ?? '');
+        foreach ($rocketParts as $count) {
+            if ($count < 10) {
+                echo json_encode(['error' => 'Raketa jeste nema vsechny soucastky.']);
+                return true;
+            }
+        }
+
+        updateGameState($db, 'WIN');
+        echo json_encode(['success' => true]);
+        return true;
+    }
+
     return false;
 }

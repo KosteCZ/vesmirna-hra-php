@@ -71,6 +71,7 @@ export const gameActionMethods = {
     updateGlobalAlert() {
         const bar = document.getElementById('global-alert-bar');
         const textEl = document.getElementById('storm-countdown-text');
+        const escalationMessageBtn = document.getElementById('storm-escalation-message-btn');
         if (!bar || !this.planet) return;
 
         const state = this.planet.game_state;
@@ -95,8 +96,10 @@ export const gameActionMethods = {
             updateTimer();
             if (this.globalTimerInterval) clearInterval(this.globalTimerInterval);
             this.globalTimerInterval = setInterval(updateTimer, 1000);
+            if (escalationMessageBtn) escalationMessageBtn.classList.toggle('hidden', state !== 'SAND_STORM_COMING_2');
         } else {
             bar.classList.add('hidden');
+            if (escalationMessageBtn) escalationMessageBtn.classList.add('hidden');
             if (this.globalTimerInterval) clearInterval(this.globalTimerInterval);
         }
     },
@@ -106,6 +109,14 @@ export const gameActionMethods = {
             'Blížící se písečná bouře',
             'resources/events/event-sand-storm.png',
             'Radary zjistily, že se k tvojí základně pomalu blíží písečná bouře. Pokuste se s ostatními veliteli co nejdřív dokončit výstavbu vesmírné brány a zároveň vyrob všechny potřebné části pro výstavbu rakety, aby bylo možné opustit tuto planetu a proletět bránou zpátky domů.'
+        );
+    },
+
+    showSandStormEscalationEvent() {
+        this.showEventModal(
+            'P\u00edse\u010dn\u00e1 bou\u0159e zrychluje',
+            'resources/events/event-sand-storm-2.png',
+            'Nov\u00e1 m\u011b\u0159en\u00ed ukazuj\u00ed, \u017ee se p\u00edse\u010dn\u00e1 bou\u0159e bl\u00ed\u017e\u00ed mnohem rychleji, ne\u017e jsme \u010dekali. \u010casu na dokon\u010den\u00ed vesm\u00edrn\u00e9 br\u00e1ny a p\u0159\u00edpravu rakety zb\u00fdv\u00e1 m\u00e9n\u011b. V\u0161ichni velitel\u00e9 mus\u00ed okam\u017eit\u011b zrychlit pr\u00e1ce.'
         );
     },
 
@@ -122,6 +133,12 @@ export const gameActionMethods = {
                 'Radary zjistily, že se k tvojí základně pomalu blíží písečná bouře. Pokuste se s ostatními veliteli co nejdřív dokončit výstavbu vesmírné brány a zároveň vyrob všechny potřebné části pro výstavbu rakety, aby bylo možné opustit tuto planetu a proletět bránou zpátky domů.'
             );
             seenStates.push('SAND_STORM_COMING_1');
+            localStorage.setItem('seen_game_states', JSON.stringify(seenStates));
+        }
+
+        if (state === 'SAND_STORM_COMING_2' && !seenStates.includes('SAND_STORM_COMING_2')) {
+            this.showSandStormEscalationEvent();
+            seenStates.push('SAND_STORM_COMING_2');
             localStorage.setItem('seen_game_states', JSON.stringify(seenStates));
         }
     },
@@ -256,10 +273,25 @@ export const gameActionMethods = {
         await this.postAction('start_rocket_workshop_production', formData);
     },
 
+    async buyRocketWorkshopPart() {
+        if (this.displayCrystal < 50000) return alert('Nedostatek krystalĹŻ (50 000)!');
+        const data = await this.postAction('buy_rocket_workshop_part');
+        this.showRocketPartModal(data);
+    },
+
+    async launchRocket() {
+        const data = await this.postAction('launch_rocket');
+        if (data && data.success) alert('Raketa odstartovala!');
+    },
+
     async collectRocketWorkshopProduct(slot = 1) {
         const formData = new FormData();
         formData.append('slot', slot);
         const data = await this.postAction('collect_rocket_workshop_product', formData);
+        this.showRocketPartModal(data);
+    },
+
+    showRocketPartModal(data) {
         if (!data || !data.part_label) return;
 
         const modal = document.getElementById('workshop-modal');

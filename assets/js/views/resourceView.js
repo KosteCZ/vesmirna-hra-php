@@ -7,6 +7,7 @@ export const resourceViewMethods = {
         this.updateAlienUI();
         this.updateResearchUI();
         this.updateRocketWorkshopUI();
+        this.updateRocketPlatformUI();
     },
 
     refreshIcons() {
@@ -31,6 +32,12 @@ export const resourceViewMethods = {
         setIcon('icon-secret-mine-container', 'icon-secret-mine', 'mines-crystal.png', 40);
         setIcon('icon-hangar-container', 'icon-vehicle', 'hangar.png', 28);
         setIcon('icon-rocket-workshop-container', 'icon-lab', 'space-workshop.png', 28);
+        const platformIcon = document.getElementById('icon-rocket-platform-container');
+        if (platformIcon) {
+            platformIcon.innerHTML = this.useImages
+                ? '<img src="resources/rocket-icon.png" width="28" height="28" alt="rocket">'
+                : '&#128640;';
+        }
     },
 
     renderIcon(symbolId, imagePath = null, size = 24) {
@@ -189,5 +196,6 @@ export const resourceViewMethods = {
         this.updateAdvancedResearchUI(researched);
         this.updateVehicleUI();
         this.updateDroneUI();
+        this.updateRocketPlatformUI();
     },
 };

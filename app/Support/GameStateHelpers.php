@@ -49,6 +49,11 @@ function checkGameStateTransitions(PDO $db): void
         setGlobalSetting($db, 'sand_storm_eta', $eta);
     } elseif ($currentState === 'SAND_STORM_COMING_1' && $colorsAtLimit >= 3) {
         updateGameState($db, 'SAND_STORM_COMING_2');
+        $fiveDaysEta = (new DateTime())->modify('+5 days');
+        $currentEta = getGlobalSetting($db, 'sand_storm_eta');
+        if (!$currentEta || new DateTime($currentEta) > $fiveDaysEta) {
+            setGlobalSetting($db, 'sand_storm_eta', $fiveDaysEta->format('Y-m-d H:i:s'));
+        }
     }
 }
 
@@ -69,4 +74,15 @@ function calculateGlobalAlienTotals(PDO $db): array
         'orange' => (float) ($row['orange'] ?? 0),
         'purple' => (float) ($row['purple'] ?? 0),
     ];
+}
+
+function isInterstellarGateActive(PDO $db): bool
+{
+    foreach (calculateGlobalAlienTotals($db) as $amount) {
+        if ($amount < 10000000) {
+            return false;
+        }
+    }
+
+    return true;
 }

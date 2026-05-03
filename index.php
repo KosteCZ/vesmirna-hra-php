@@ -118,6 +118,7 @@ session_start();
             <div id="global-alert-bar" class="global-alert hidden">
                 <span id="storm-countdown-text"></span>
                 <button class="icon-btn" onclick="game.showSandStormEvent()" title="Připomenout událost">✉️</button>
+                <button id="storm-escalation-message-btn" class="icon-btn hidden" onclick="game.showSandStormEscalationEvent()" title="Připomenout zrychlení bouře">✉️</button>
             </div>
 
             <!-- Resource Section -->
@@ -326,6 +327,11 @@ session_start();
                         <p id="rocket-workshop-finished-note" class="hidden" style="margin: 12px 0 0; color: #28a745; font-size: 0.85rem;">
                             Všechny druhy součástek už máš vyrobené 10x.
                         </p>
+                        <div id="rocket-workshop-crystal-buy" class="hidden" style="margin-top: 15px; padding: 15px; border: 1px solid #bc4aff55; border-radius: 8px; background: #bc4aff12;">
+                            <p style="margin: 0 0 10px; font-weight: bold; color: #bc4aff;">Nouzov&yacute; n&aacute;kup d&iacute;lu</p>
+                            <p style="margin: 0 0 10px; font-size: 0.85rem; color: #9fb3c8;">Bou&#345;e se bl&iacute;&#382;&iacute;. Jeden n&aacute;hodn&yacute; nedokon&#269;en&yacute; raketov&yacute; d&iacute;l lze koupit okam&#382;it&#283; za krystaly.</p>
+                            <button id="rocket-workshop-buy-crystal-btn" onclick="game.buyRocketWorkshopPart()" style="background: #bc4aff; color: black; font-size: 0.85rem;">Koupit d&iacute;l (50k Kryst.)</button>
+                        </div>
                     </div>
 
                     <div style="flex: 1 1 320px;">
@@ -585,6 +591,33 @@ session_start();
                 </div>
             </section>
 
+            <!-- Rocket Platform Section -->
+            <section id="rocket-platform-section" class="card hidden" style="margin-bottom: 30px;">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <span id="icon-rocket-platform-container" style="display: inline-flex; vertical-align: middle;">&#128640;</span>
+                    Raketov&aacute; platforma
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; align-items: stretch;">
+                    <div style="border: 1px solid #30363d; border-radius: 8px; padding: 15px; background: #161b22;">
+                        <p style="margin: 0 0 10px; font-weight: bold;">Mezihv&#283;zdn&aacute; br&aacute;na</p>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <img id="space-gate-status-image" src="resources/space-gate-off.png" alt="Stav mezihv&#283;zdn&eacute; br&aacute;ny" style="width: 96px; height: 96px; object-fit: contain;">
+                            <p id="space-gate-status-text" style="margin: 0; color: #f87171;">Neaktivn&iacute;</p>
+                        </div>
+                    </div>
+                    <div style="border: 1px solid #30363d; border-radius: 8px; padding: 15px; background: #161b22;">
+                        <p style="margin: 0 0 10px; font-weight: bold;">Raketov&eacute; sou&#269;&aacute;stky</p>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <img id="rocket-platform-status-image" src="resources/rocket-platform-empty.png" alt="Stav raketov&eacute; platformy" style="width: 96px; height: 96px; object-fit: contain;">
+                            <p id="rocket-platform-status-text" style="margin: 0; color: #f87171;">Raketa nen&iacute; kompletn&iacute;</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="launch-rocket-btn" onclick="game.launchRocket()" disabled style="margin-top: 20px; background: #ff7043; color: black; width: auto; padding: 10px 18px;">
+                    Odstartovat raketu
+                </button>
+            </section>
+
             <!-- Leaderboard Section -->
             <section class="leaderboard card" style="margin-bottom: 30px;">
                 <h3>🏆 Top Průzkumníci</h3>
@@ -612,7 +645,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.05.03.2208
+        v2026.05.03.2352
     </footer>
 
     <!-- Workshop Item Modal -->

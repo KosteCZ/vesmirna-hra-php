@@ -406,3 +406,11 @@ function collectRocketWorkshopProduct(PDO $db, int $userId, string $rocketPartsJ
         [$rocketPartsJson, $updatedAt, $userId]
     );
 }
+
+function buyRocketWorkshopPart(PDO $db, int $userId, float $crystalCost, string $rocketPartsJson, string $updatedAt): void {
+    executePlanetUpdateByUserId(
+        $db,
+        "UPDATE planets SET crystal_amount = crystal_amount - ?, rocket_parts = ?, last_updated = ? WHERE user_id = ?",
+        [$crystalCost, $rocketPartsJson, $updatedAt, $userId]
+    );
+}

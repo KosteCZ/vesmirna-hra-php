@@ -33,6 +33,8 @@ export const workshopViewMethods = {
         const upgradeBtn = document.getElementById('rocket-workshop-upgrade-btn');
         const partsList = document.getElementById('rocket-parts-list');
         const finishedEl = document.getElementById('rocket-workshop-finished-note');
+        const crystalBuy = document.getElementById('rocket-workshop-crystal-buy');
+        const crystalBuyBtn = document.getElementById('rocket-workshop-buy-crystal-btn');
 
         if (partsList) {
             partsList.innerHTML = '';
@@ -61,6 +63,10 @@ export const workshopViewMethods = {
         }
 
         if (finishedEl) finishedEl.classList.toggle('hidden', !allCompleted);
+        const canBuyWithCrystals = this.planet.game_state === 'SAND_STORM_COMING_2';
+        if (crystalBuy) crystalBuy.classList.toggle('hidden', !canBuyWithCrystals || allCompleted);
+        if (crystalBuyBtn) crystalBuyBtn.disabled = this.displayCrystal < 50000 || allCompleted;
+
         const isSlot1Idle = (this.planet.rocket_workshop_status || 'idle') === 'idle';
         if (upgradeBtn) {
             upgradeBtn.classList.toggle('hidden', level >= 2 || !isSlot1Idle);
@@ -134,6 +140,41 @@ export const workshopViewMethods = {
                 startBtn.disabled = this.displayTubes < data.cost || data.allCompleted;
             }
             if (collectBtn) collectBtn.classList.add('hidden');
+        }
+    },
+
+    updateRocketPlatformUI() {
+        const section = document.getElementById('rocket-platform-section');
+        if (!section || !this.planet) return;
+
+        const visible = this.planet.game_state === 'SAND_STORM_COMING_2' || this.planet.game_state === 'WIN';
+        section.classList.toggle('hidden', !visible);
+        if (!visible) return;
+
+        const totals = this.planet.alien_global_totals || {};
+        const gateActive = Object.keys(this.colorNames).every((color) => Number(totals[color] || 0) >= 10000000);
+        const rocketComplete = Boolean(this.planet.rocket_parts_all_completed);
+
+        const gateImage = document.getElementById('space-gate-status-image');
+        const gateText = document.getElementById('space-gate-status-text');
+        const rocketImage = document.getElementById('rocket-platform-status-image');
+        const rocketText = document.getElementById('rocket-platform-status-text');
+        const launchBtn = document.getElementById('launch-rocket-btn');
+
+        if (gateImage) gateImage.src = gateActive ? 'resources/space-gate-on.png' : 'resources/space-gate-off.png';
+        if (gateText) {
+            gateText.innerText = gateActive ? 'Aktivn\u00ed' : 'Neaktivn\u00ed';
+            gateText.style.color = gateActive ? '#4ade80' : '#f87171';
+        }
+        if (rocketImage) rocketImage.src = rocketComplete ? 'resources/rocket-platform-with-rocket.png' : 'resources/rocket-platform-empty.png';
+        if (rocketText) {
+            rocketText.innerText = rocketComplete ? 'Raketa je kompletn\u00ed' : 'Raketa nen\u00ed kompletn\u00ed';
+            rocketText.style.color = rocketComplete ? '#4ade80' : '#f87171';
+        }
+        if (launchBtn) {
+            const launched = this.planet.game_state === 'WIN';
+            launchBtn.disabled = launched || !gateActive || !rocketComplete;
+            launchBtn.innerText = launched ? 'Raketa odstartovala' : 'Odstartovat raketu';
         }
     },
 };
