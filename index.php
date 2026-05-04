@@ -119,6 +119,7 @@ session_start();
                 <span id="storm-countdown-text"></span>
                 <button class="icon-btn" onclick="game.showSandStormEvent()" title="Připomenout událost">✉️</button>
                 <button id="storm-escalation-message-btn" class="icon-btn hidden" onclick="game.showSandStormEscalationEvent()" title="Připomenout zrychlení bouře">✉️</button>
+                <button id="rocket-launch-message-btn" class="icon-btn hidden" onclick="game.showRocketLaunchEvent()" title="Připomenout start rakety">✉️</button>
             </div>
 
             <!-- Resource Section -->
@@ -645,7 +646,7 @@ session_start();
     </main>
 
     <footer style="text-align: center; padding: 20px; color: #444; font-size: 0.7rem; font-family: monospace;">
-        v2026.05.04.0021
+        v2026.05.04.2210
     </footer>
 
     <!-- Workshop Item Modal -->
