@@ -130,6 +130,7 @@ $rocketPartDefs = getRocketPartDefinitions();
         <a href="#research">Výzkum</a>
         <a href="#rocket">Raketové díly</a>
         <a href="#vehicles">Vozidla</a>
+        <a href="#summary">Suroviny a Cíl</a>
     </div>
 
     <h2 id="buildings">Úrovně budov</h2>
@@ -275,6 +276,34 @@ $rocketPartDefs = getRocketPartDefinitions();
                 <td class="<?= ($p['vehicle_sensor_lvl'] ?? 1) > 1 ? 'val-positive' : 'val-zero' ?>"><?= $p['vehicle_sensor_lvl'] ?? 1 ?></td>
                 <td class="<?= ($p['vehicle2_level'] ?? 0) > 0 ? 'val-positive' : 'val-zero' ?>"><?= $p['vehicle2_level'] ?? 0 ?></td>
                 <td class="<?= ($p['vehicle2_sensor_lvl'] ?? 1) > 1 ? 'val-positive' : 'val-zero' ?>"><?= $p['vehicle2_sensor_lvl'] ?? 1 ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <h2 id="summary">Suroviny a Cíl</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Hráč</th>
+                <th>Krystaly</th>
+                <th>Stav mise</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            $globalState = getGameState($db);
+            foreach ($players as $p): 
+                $hasEscaped = ($globalState === 'WIN'); // Simple check for now
+            ?>
+            <tr>
+                <td><strong><?= htmlspecialchars($p['player_name']) ?></strong></td>
+                <td class="<?= ($p['crystal_amount'] ?? 0) > 0 ? 'val-positive' : 'val-zero' ?>">
+                    <?= number_format($p['crystal_amount'] ?? 0, 0, ',', ' ') ?>
+                </td>
+                <td class="<?= $hasEscaped ? 'val-researched' : '' ?>">
+                    <?= $hasEscaped ? 'ODSTARTOVAL (WIN)' : 'Na planetě' ?>
+                </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
